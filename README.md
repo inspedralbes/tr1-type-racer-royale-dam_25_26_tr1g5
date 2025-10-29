@@ -14,7 +14,7 @@ Aquest projecte és un **servidor WebSocket en Node.js** per gestionar sessions 
 
 1. Clona el repositori:
 
-git clone [https://github.com/tu-usuari/websocket-training-server.git](https://github.com/inspedralbes/tr1-type-racer-royale-dam_25_26_tr1g5.git)
+git clone [https://github.com/inspedralbes/tr1-type-racer-royale-dam_25_26_tr1g5.git](https://github.com/inspedralbes/tr1-type-racer-royale-dam_25_26_tr1g5.git)
 
 2. Instal·la les dependències:
 
