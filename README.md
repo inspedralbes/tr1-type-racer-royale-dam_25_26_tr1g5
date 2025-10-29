@@ -1,16 +1,26 @@
-# transversals
-Esquema mínim de carpetes pels projectes transversals
+# Servidor WebSocket d'Entrenament
 
-És obligatori seguir aquesta estructura tot i que la podeu ampliar.
+Aquest projecte és un **servidor WebSocket en Node.js** per gestionar sessions d'entrenament en temps real. Cada sessió pot tenir múltiples participants i el servidor manté un **registre de tots els usuaris connectats**, incloent les seves repeticions o dades d'entrenament.
 
-## Atenció
-Un cop comenceu heu de canviar aquesta explicació amb la corresponent al vostre projecte (utilitzant markdown)
+## Característiques
 
-# Aquest fitxer ha de contenir com a mínim:
- * Nom dels integrants
- * Nom del projecte
- * Petita descripció
- * Adreça del gestor de tasques (taiga, jira, trello...)
- * Adreça del prototip gràfic del projecte (Penpot, figma, moqups...)
- * URL de producció (quan la tingueu)
- * Estat: (explicació d'en quin punt està)
+- Suporta **múltiples sessions simultànies**.
+- Cada sessió manté un **registre complet dels participants**.
+- Els participants poden enviar les seves **dades d'entrenament** (`reps`) al servidor.
+- El servidor envia automàticament **l'estat complet de la sessió** a tots els clients quan hi ha canvis.
+- Compatible amb navegadors o eines com **Postman**.
+
+## Instal·lació
+
+1. Clona el repositori:
+
+git clone https://github.com/tu-usuari/websocket-training-server.git
+
+2. Instal·la les dependències:
+
+npm install
+
+
+Inicia el servidor:
+
+node server.js
