@@ -21,6 +21,7 @@ wss.on('connection', (ws) => {
     const clientId = generateClientId();
     ws.clientId = clientId;
     ws.sessionId = null;
+    ws.reps = 0;
 
     ws.on('message', (data) => {
         let msg;
@@ -41,6 +42,9 @@ wss.on('connection', (ws) => {
                 }
 
                 ws.sessionId = sessionId;
+                ws.userId = userId;
+                ws.displayName = displayName || userId;
+                ws.reps = 0;
 
                 if (!sessions.has(sessionId)) {
                     sessions.set(sessionId, { clients: new Set(), participants: new Map() });
@@ -48,7 +52,11 @@ wss.on('connection', (ws) => {
 
                 const session = sessions.get(sessionId);
                 session.clients.add(ws);
-                session.participants.set(clientId, { userId, displayName: displayName || userId });
+                session.participants.set(clientId, {
+                    userId: ws.userId,
+                    displayName: ws.displayName,
+                    reps: ws.reps
+                });
 
                 broadcastSession(sessionId);
                 break;
@@ -60,17 +68,15 @@ wss.on('connection', (ws) => {
                     return;
                 }
 
+                ws.reps = reps || 0;
                 const session = sessions.get(ws.sessionId);
-                for (const client of session.clients) {
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(JSON.stringify({
-                            type: 'update',
-                            userId,
-                            reps,
-                            time: new Date().toISOString()
-                        }));
-                    }
-                }
+                session.participants.set(clientId, {
+                    userId: ws.userId,
+                    displayName: ws.displayName,
+                    reps: ws.reps
+                });
+
+                broadcastSession(ws.sessionId);
                 break;
             }
 
