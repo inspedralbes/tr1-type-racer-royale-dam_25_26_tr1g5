@@ -20,7 +20,6 @@ git clone [https://github.com/inspedralbes/tr1-type-racer-royale-dam_25_26_tr1g5
 
 npm install
 
-
-Inicia el servidor:
+3. Inicia el servidor:
 
 node server.js
