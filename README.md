@@ -1,5 +1,8 @@
 # 🧠 **FitCam**
-<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/c202c189-35e1-415a-ae4e-ff883b16dbd9" />
+<img width="420" height="420" alt="image" src="https://github.com/user-attachments/assets/c202c189-35e1-415a-ae4e-ff883b16dbd9" />
+
+---
+
 ## 👥 Membres de l’equip
 - **Eduard Vilaseca**  
 - **Aymar Ramos**  
