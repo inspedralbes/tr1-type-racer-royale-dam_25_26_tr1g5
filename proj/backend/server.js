@@ -1,28 +1,27 @@
-// Servidor WebSocket básico con Node.js y la librería ws
-// Guarda este archivo como server.js y ejecútalo con: node server.js
-
 const WebSocket = require('ws');
 const http = require('http');
 
 const PORT = 8080;
 
-// Creamos un servidor HTTP base (para mantenerlo "vivo")
 const server = http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('Servidor WebSocket en ejecución');
+    res.end('Servidor WebSocket funcionando');
 });
 
-// Creamos el servidor WebSocket
 const wss = new WebSocket.Server({ server });
 
-// Estructura en memoria para guardar las sesiones
-// { sessionId: Set<WebSocket> }
 const sessions = new Map();
 
-wss.on('connection', (ws) => {
-    console.log('Nuevo cliente conectado');
+let nextClientId = 1;
+function generateClientId() {
+    return `client-${nextClientId++}`;
+}
 
-    // Cuando el cliente envía un mensaje
+wss.on('connection', (ws) => {
+    const clientId = generateClientId();
+    ws.clientId = clientId;
+    ws.sessionId = null;
+
     ws.on('message', (data) => {
         let msg;
         try {
@@ -32,35 +31,37 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // Procesamos los tipos de mensajes
-        switch (msg.type) {
+        const { type, sessionId, userId, displayName, reps } = msg;
+
+        switch (type) {
             case 'join_session': {
-                const { sessionId } = msg;
-                if (!sessionId) {
-                    ws.send(JSON.stringify({ type: 'error', message: 'Falta sessionId' }));
+                if (!sessionId || !userId) {
+                    ws.send(JSON.stringify({ type: 'error', message: 'Falta sessionId o userId' }));
                     return;
                 }
 
-                // Añadimos al cliente a la sesión correspondiente
-                if (!sessions.has(sessionId)) {
-                    sessions.set(sessionId, new Set());
-                }
-                sessions.get(sessionId).add(ws);
                 ws.sessionId = sessionId;
 
-                console.log(`Cliente unido a la sesión: ${sessionId}`);
+                if (!sessions.has(sessionId)) {
+                    sessions.set(sessionId, { clients: new Set(), participants: new Map() });
+                }
 
-                ws.send(JSON.stringify({ type: 'joined', sessionId }));
+                const session = sessions.get(sessionId);
+                session.clients.add(ws);
+                session.participants.set(clientId, { userId, displayName: displayName || userId });
+
+                broadcastSession(sessionId);
                 break;
             }
 
             case 'update_training': {
-                const { sessionId, userId, reps } = msg;
-                if (!sessionId || !sessions.has(sessionId)) {
-                    ws.send(JSON.stringify({ type: 'error', message: 'Sesión no encontrada' }));
+                if (!ws.sessionId || !sessions.has(ws.sessionId)) {
+                    ws.send(JSON.stringify({ type: 'error', message: 'No estás en ninguna sesión' }));
                     return;
                 }
-                for (const client of sessions.get(sessionId)) {
+
+                const session = sessions.get(ws.sessionId);
+                for (const client of session.clients) {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(JSON.stringify({
                             type: 'update',
@@ -72,22 +73,45 @@ wss.on('connection', (ws) => {
                 }
                 break;
             }
+
             default:
                 ws.send(JSON.stringify({ type: 'error', message: 'Tipo de mensaje no reconocido' }));
         }
     });
 
     ws.on('close', () => {
-        console.log('Cliente desconectado');
         if (ws.sessionId && sessions.has(ws.sessionId)) {
-            sessions.get(ws.sessionId).delete(ws);
-            if (sessions.get(ws.sessionId).size === 0) {
+            const session = sessions.get(ws.sessionId);
+            session.clients.delete(ws);
+            session.participants.delete(clientId);
+
+            if (session.clients.size === 0) {
                 sessions.delete(ws.sessionId);
+            } else {
+                broadcastSession(ws.sessionId);
             }
         }
     });
 });
 
+function broadcastSession(sessionId) {
+    if (!sessions.has(sessionId)) return;
+    const session = sessions.get(sessionId);
+
+    const payload = {
+        type: 'session_state',
+        sessionId,
+        participants: Array.from(session.participants.values()),
+        updatedAt: new Date().toISOString()
+    };
+
+    for (const client of session.clients) {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(payload));
+        }
+    }
+}
+
 server.listen(PORT, () => {
-    console.log(`Servidor WebSocket funcionando en ws://localhost:${PORT}`);
+    console.log(`Servidor WebSocket escuchando en ws://localhost:${PORT}`);
 });
