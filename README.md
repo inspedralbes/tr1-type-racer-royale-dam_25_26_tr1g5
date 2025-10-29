@@ -39,7 +39,7 @@ L’objectiu és oferir una experiència d’entrenament gamificada, social i pe
 ---
 
 ## 📋 **Gestió del projecte**
-**Eina utilitzada:** [Taiga]([https://trello.com/](https://api.taiga.io/api/v1/github-hook?project=1747129)](https://tree.taiga.io/project/a24biecalcol-dam2_proj1/timeline))
+**Eina utilitzada:** [Taiga](https://tree.taiga.io/project/a24biecalcol-dam2_proj1/timeline)
 
 ---
 
