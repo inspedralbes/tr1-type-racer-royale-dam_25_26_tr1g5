@@ -1,5 +1,5 @@
 # 🧠 **FitCam**
-
+<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/c202c189-35e1-415a-ae4e-ff883b16dbd9" />
 ## 👥 Membres de l’equip
 - **Eduard Vilaseca**  
 - **Aymar Ramos**  
@@ -36,14 +36,12 @@ L’objectiu és oferir una experiència d’entrenament gamificada, social i pe
 ---
 
 ## 📋 **Gestió del projecte**
-**Eina utilitzada:** [Trello](https://trello.com/) *(o indica l’enllaç real quan el tingueu)*  
-Serveix per planificar tasques, assignar rols i fer seguiment de l’estat del projecte.
+**Eina utilitzada:** [Taiga]([https://trello.com/](https://api.taiga.io/api/v1/github-hook?project=1747129))
 
 ---
 
 ## 🎨 **Prototip gràfic**
-**Penpot:**  
-[👉 Obrir el disseny](https://design.penpot.app/#/view?file-id=5b786374-066f-8104-8007-048a32a15967&page-id=5b786374-066f-8104-8007-048a32a18227&section=interactions&index=0&share-id=5b786374-066f-8104-8007-049649ccb737)
+**Penpot:** [👉 Obrir el disseny](https://design.penpot.app/#/view?file-id=5b786374-066f-8104-8007-048a32a15967&page-id=5b786374-066f-8104-8007-048a32a18227&section=interactions&index=0&share-id=5b786374-066f-8104-8007-049649ccb737)
 
 ---
 
