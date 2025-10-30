@@ -44,7 +44,13 @@
             md="2"
             lg="3"
           >
-            <v-card class="exercise-card" elevation="1" height="150">
+          <v-card
+          class="exercise-card"
+          elevation="1"
+          height="150"
+          @click="goToExercise(exercise)"
+          style="cursor: pointer;"
+          >
               <!-- GIF ocupa todo el recuadro al hover -->
               <v-img
                 v-if="exerciseGifs[exercise]"
@@ -96,6 +102,15 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+const goToExercise = (exercise) => {
+  router.push({
+    name: 'Exercici', // nombre de la ruta de tu Exercici.vue
+    query: { name: exercise } // opcional: pasar el nombre del ejercicio
+  })
+}
 
 const search = ref('')
 const loginDialog = ref(false)

@@ -1,9 +1,6 @@
 <template>
-  <!-- Esto renderiza el componente -->
-  <BuscadorExercici />
+  <router-view />
 </template>
 
 <script setup>
-// Importa correctamente tu componente
-import BuscadorExercici from './components/BuscadorExercici.vue'
 </script>
