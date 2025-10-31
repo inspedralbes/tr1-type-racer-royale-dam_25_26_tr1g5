@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const exerciseName = route.query.name || 'Ejercicio'
+const exerciseName = route.query.name || 'Exercici'
 
 // Video demo
 const videoUrl = ref('/videos/Download.mp4')
@@ -63,7 +63,7 @@ const pauseTimer = () => {
 
     <div class="top-section">
       <div class="video-box">
-        <h2>Video de Ejercicio</h2>
+        <h2>Video d'exercicis</h2>
         <video :src="videoUrl" controls autoplay class="video-player"></video>
       </div>
 
@@ -77,14 +77,14 @@ const pauseTimer = () => {
       <div class="stat-card">
         <div class="stat-icon">🏋️</div>
         <div class="stat-value">{{ exerciseCount }}</div>
-        <div class="stat-label">Ejercicios Completados</div>
-        <button @click="incrementExercises" class="increment-btn">+ Agregar Ejercicio</button>
+        <div class="stat-label">Exercicis Completats</div>
+        <button @click="incrementExercises" class="increment-btn">+ Afegir exercici</button>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon">⏱️</div>
         <div class="stat-value">{{ formatTime(sessionTime) }}</div>
-        <div class="stat-label">Tiempo de Sesión</div>
+        <div class="stat-label">Temps de Sessió</div>
         <div class="timer-buttons">
           <button @click="startTimer" :disabled="isTimerRunning" class="timer-btn start-btn">▶ Iniciar</button>
           <button @click="pauseTimer" :disabled="!isTimerRunning" class="timer-btn pause-btn">⏸ Pausar</button>
@@ -94,22 +94,41 @@ const pauseTimer = () => {
       <div class="stat-card">
         <div class="stat-icon">🔥</div>
         <div class="stat-value">{{ caloriesBurned }}</div>
-        <div class="stat-label">Calorías Quemadas</div>
+        <div class="stat-label">Calorías Cremades</div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.dark-bg { background-color:#121212; min-height:100vh; padding:20px; }
 .top-section { display:flex; gap:20px; margin-bottom:20px; }
 .video-box, .camera-box { flex:1; }
 .video-player, .camera-player { width:100%; height:300px; object-fit:contain; }
 .stats-grid { display:flex; gap:20px; flex-wrap:wrap; }
-.stat-card { background:#2a2a2a; padding:20px; border-radius:10px; flex:1; min-width:220px; text-align:center; }
+.stat-card {padding:20px; border-radius:10px; flex:1; min-width:220px; text-align:center; }
 .increment-btn, .timer-btn { margin-top:10px; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; color:#fff; font-weight:600; }
 .increment-btn { background:#42b883; }
 .timer-btn.start-btn { background:#42b883; }
 .timer-btn.pause-btn { background:#f59e0b; }
 .timer-btn:disabled { opacity:0.5; cursor:not-allowed; }
+/* 🌞 Modo claro */
+@media (prefers-color-scheme: light) {
+  .text-white,
+  .card-text,
+  .v-toolbar-title,
+  .v-btn {
+    color: black !important;
+    text-shadow: none !important;
+  }
+}
+
+/* 🌙 Modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .text-white,
+  .card-text,
+  .v-toolbar-title,
+  .v-btn {
+    color: white !important;
+  }
+}
 </style>

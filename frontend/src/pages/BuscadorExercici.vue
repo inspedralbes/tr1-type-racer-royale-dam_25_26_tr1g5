@@ -67,14 +67,14 @@
         <!-- Dialogo de login simple -->
         <v-dialog v-model="loginDialog" max-width="400">
           <v-card>
-            <v-card-title class="text-h6">Iniciar sesión / Registrar-se</v-card-title>
+            <v-card-title class="text-h6">Iniciar sessió / Registrar-se</v-card-title>
             <v-card-text>
-              <v-text-field v-model="tempName" label="Nombre de usuario" />
+              <v-text-field v-model="tempName" label="Nom d'usuari" />
             </v-card-text>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn text @click="loginDialog = false">Cancelar</v-btn>
-              <v-btn color="primary" @click="login()">Aceptar</v-btn>
+              <v-btn text @click="loginDialog = false">Cancel·lar</v-btn>
+              <v-btn color="primary" @click="login()">Acceptar</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -107,8 +107,9 @@ const router = useRouter()
 
 const goToExercise = (exercise) => {
   router.push({
-    name: 'Exercici', // nombre de la ruta de tu Exercici.vue
-    query: { name: exercise } // opcional: pasar el nombre del ejercicio
+    name: 'Exercici',
+    params: { id: exercise.id }, 
+    query: { name: exercise.name } 
   })
 }
 
@@ -127,7 +128,7 @@ const exercises = ref([
   'Extensió de tríceps en polea',
   'Elevacions laterals',
     /*
-  'Jalón al pit',
+  'Jaló al pit',
   'Press de cames',
   'Extensió de cames',
   'Curl femoral tumbat',
@@ -152,7 +153,7 @@ const exerciseGifs = {
   'Extensió de tríceps en polea': '/videos/extensiontricepsenpolea.gif',
   'Elevacions laterals': '/videos/elevacioneslaterales.gif',
   /*
-  'Jalón al pit': '/videos/jalonpecho.gif',
+  'Jaló al pit': '/videos/jalopecho.gif',
   'Press de cames': '/videos/presspiernas.gif',
   'Extensió de cames': '/videos/extensionpiernas.gif',
   'Curl femoral tumbat': '/videos/curlfemoralacostado.gif',
@@ -204,7 +205,6 @@ const login = () => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* GIF overlay estirado para ocupar todo el card */
 .gif-overlay {
   position: absolute;
   top: 0;
@@ -221,12 +221,34 @@ const login = () => {
   opacity: 1;
 }
 
-/* Texto sobre GIF */
 .card-text {
-  position: relative;
+  position: relativminutes  e;
   z-index: 2;
   color: #fff;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
 }
+/* Detecta el modo del sistema y cambia el color del texto automáticamente */
+
+/* 🌞 Modo claro */
+@media (prefers-color-scheme: light) {
+  .text-white,
+  .card-text,
+  .v-toolbar-title,
+  .v-btn {
+    color: black !important;
+    text-shadow: none !important;
+  }
+}
+
+/* 🌙 Modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .text-white,
+  .card-text,
+  .v-toolbar-title,
+  .v-btn {
+    color: white !important;
+  }
+}
+
 </style>
 
