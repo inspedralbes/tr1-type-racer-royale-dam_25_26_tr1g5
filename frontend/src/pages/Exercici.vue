@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
-const exerciseName = route.query.name || 'Exercici'
+const router = useRouter()
+const exerciseName = (route.query.name as string) || 'Exercici'
 
-// Video demo
 const videoUrl = ref('/videos/Download.mp4')
 
-// Cámara
 const videoStream = ref<MediaStream | null>(null)
 const cameraElement = ref<HTMLVideoElement | null>(null)
+const cameraError = ref(false)
 
-// Stats
 const exerciseCount = ref(0)
 const sessionTime = ref(0)
 const caloriesBurned = ref(0)
@@ -23,9 +22,13 @@ onMounted(async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
     videoStream.value = stream
-    if (cameraElement.value) cameraElement.value.srcObject = stream
+    if (cameraElement.value) {
+      cameraElement.value.srcObject = stream
+    }
+    cameraError.value = false
   } catch (error) {
-    console.error('Error al acceder a la cámara:', error)
+    console.error('Error al accedir a la càmera:', error)
+    cameraError.value = true
   }
 })
 
@@ -34,101 +37,269 @@ onUnmounted(() => {
   if (intervalId !== null) clearInterval(intervalId)
 })
 
-const formatTime = (seconds: number) => {
+const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const secs = seconds % 60
-  return [hours, minutes, secs].map(u => u.toString().padStart(2,'0')).join(':')
+  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':')
 }
 
-const incrementExercises = () => exerciseCount.value++
+const incrementExercises = () => {
+  exerciseCount.value++
+  caloriesBurned.value += Math.floor(Math.random() * 3) + 2
+}
+
 const startTimer = () => {
   if (isTimerRunning.value) return
   isTimerRunning.value = true
   intervalId = window.setInterval(() => {
     sessionTime.value++
-    if (sessionTime.value % 10 === 0) caloriesBurned.value += Math.floor(Math.random()*5)+1
+    if (sessionTime.value % 10 === 0) {
+      caloriesBurned.value += Math.floor(Math.random() * 5) + 1
+    }
   }, 1000)
 }
+
 const pauseTimer = () => {
   if (!isTimerRunning.value) return
   isTimerRunning.value = false
-  if (intervalId !== null) { clearInterval(intervalId); intervalId = null }
+  if (intervalId !== null) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+}
+
+const resetStats = () => {
+  pauseTimer()
+  exerciseCount.value = 0
+  sessionTime.value = 0
+  caloriesBurned.value = 0
+}
+
+const goBack = () => {
+  router.push({ name: 'BuscadorExercici' })
 }
 </script>
 
 <template>
-  <div class="dark-bg">
-    <h1>{{ exerciseName }}</h1>
+  <v-app>
+    <v-app-bar color="#FF6600" elevation="0">
+      <v-container class="d-flex align-center pa-0">
+        <v-btn icon @click="goBack" class="me-2">
+          <v-icon>mdi-arrow-left</v-icon>
+        </v-btn>
+        <v-toolbar-title class="text-h5 font-weight-bold">
+          {{ exerciseName }}
+        </v-toolbar-title>
+      </v-container>
+    </v-app-bar>
 
-    <div class="top-section">
-      <div class="video-box">
-        <h2>Video d'exercicis</h2>
-        <video :src="videoUrl" controls autoplay class="video-player"></video>
-      </div>
+    <v-main>
+      <v-container class="py-6" fluid>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-card class="video-card" elevation="3">
+              <v-card-title class="text-h6 bg-grey-darken-3 text-white">
+                <v-icon class="me-2">mdi-play-circle</v-icon>
+                Video de demostració
+              </v-card-title>
+              <v-card-text class="pa-0">
+                <video :src="videoUrl" controls autoplay class="video-player" />
+              </v-card-text>
+            </v-card>
+          </v-col>
 
-      <div class="camera-box">
-        <h2>Tu Cámara</h2>
-        <video ref="cameraElement" autoplay playsinline class="camera-player"></video>
-      </div>
-    </div>
+          <v-col cols="12" md="6">
+            <v-card class="camera-card" elevation="3">
+              <v-card-title class="text-h6 bg-grey-darken-3 text-white">
+                <v-icon class="me-2">mdi-camera</v-icon>
+                La teva càmera
+              </v-card-title>
+              <v-card-text class="pa-0 camera-container">
+                <video
+                  v-if="!cameraError"
+                  ref="cameraElement"
+                  autoplay
+                  playsinline
+                  class="camera-player"
+                />
+                <div v-else class="camera-error">
+                  <v-icon size="64" color="error">mdi-camera-off</v-icon>
+                  <p class="mt-4">No s'ha pogut accedir a la càmera</p>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">🏋️</div>
-        <div class="stat-value">{{ exerciseCount }}</div>
-        <div class="stat-label">Exercicis Completats</div>
-        <button @click="incrementExercises" class="increment-btn">+ Afegir exercici</button>
-      </div>
+        <v-row class="mt-4">
+          <v-col cols="12" sm="6" md="4">
+            <v-card class="stat-card" elevation="3">
+              <v-card-text class="text-center pa-6">
+                <div class="stat-icon mb-3">
+                  <v-icon size="48" color="#FF6600">mdi-weight-lifter</v-icon>
+                </div>
+                <div class="stat-value text-h3 font-weight-bold mb-2">
+                  {{ exerciseCount }}
+                </div>
+                <div class="stat-label text-body-1 mb-4">
+                  Exercicis Completats
+                </div>
+                <v-btn
+                  color="#FF6600"
+                  variant="flat"
+                  block
+                  size="large"
+                  @click="incrementExercises"
+                >
+                  <v-icon class="me-2">mdi-plus</v-icon>
+                  Afegir exercici
+                </v-btn>
+              </v-card-text>
+            </v-card>
+          </v-col>
 
-      <div class="stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-value">{{ formatTime(sessionTime) }}</div>
-        <div class="stat-label">Temps de Sessió</div>
-        <div class="timer-buttons">
-          <button @click="startTimer" :disabled="isTimerRunning" class="timer-btn start-btn">▶ Iniciar</button>
-          <button @click="pauseTimer" :disabled="!isTimerRunning" class="timer-btn pause-btn">⏸ Pausar</button>
-        </div>
-      </div>
+          <v-col cols="12" sm="6" md="4">
+            <v-card class="stat-card" elevation="3">
+              <v-card-text class="text-center pa-6">
+                <div class="stat-icon mb-3">
+                  <v-icon size="48" color="#FF6600">mdi-timer</v-icon>
+                </div>
+                <div class="stat-value text-h3 font-weight-bold mb-2">
+                  {{ formatTime(sessionTime) }}
+                </div>
+                <div class="stat-label text-body-1 mb-4">
+                  Temps de Sessió
+                </div>
+                <div class="timer-buttons">
+                  <v-btn
+                    color="success"
+                    variant="flat"
+                    :disabled="isTimerRunning"
+                    @click="startTimer"
+                    size="small"
+                  >
+                    <v-icon class="me-1">mdi-play</v-icon>
+                    Iniciar
+                  </v-btn>
+                  <v-btn
+                    color="warning"
+                    variant="flat"
+                    :disabled="!isTimerRunning"
+                    @click="pauseTimer"
+                    size="small"
+                  >
+                    <v-icon class="me-1">mdi-pause</v-icon>
+                    Pausar
+                  </v-btn>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
 
-      <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-value">{{ caloriesBurned }}</div>
-        <div class="stat-label">Calorías Cremades</div>
-      </div>
-    </div>
-  </div>
+          <v-col cols="12" sm="12" md="4">
+            <v-card class="stat-card" elevation="3">
+              <v-card-text class="text-center pa-6">
+                <div class="stat-icon mb-3">
+                  <v-icon size="48" color="#FF6600">mdi-fire</v-icon>
+                </div>
+                <div class="stat-value text-h3 font-weight-bold mb-2">
+                  {{ caloriesBurned }}
+                </div>
+                <div class="stat-label text-body-1 mb-4">
+                  Calories Cremades
+                </div>
+                <v-btn
+                  color="error"
+                  variant="outlined"
+                  block
+                  size="large"
+                  @click="resetStats"
+                >
+                  <v-icon class="me-2">mdi-refresh</v-icon>
+                  Reiniciar
+                </v-btn>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
 <style scoped>
-.top-section { display:flex; gap:20px; margin-bottom:20px; }
-.video-box, .camera-box { flex:1; }
-.video-player, .camera-player { width:100%; height:300px; object-fit:contain; }
-.stats-grid { display:flex; gap:20px; flex-wrap:wrap; }
-.stat-card {padding:20px; border-radius:10px; flex:1; min-width:220px; text-align:center; }
-.increment-btn, .timer-btn { margin-top:10px; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; color:#fff; font-weight:600; }
-.increment-btn { background:#42b883; }
-.timer-btn.start-btn { background:#42b883; }
-.timer-btn.pause-btn { background:#f59e0b; }
-.timer-btn:disabled { opacity:0.5; cursor:not-allowed; }
-/* 🌞 Modo claro */
-@media (prefers-color-scheme: light) {
-  .text-white,
-  .card-text,
-  .v-toolbar-title,
-  .v-btn {
-    color: black !important;
-    text-shadow: none !important;
-  }
+.video-card,
+.camera-card {
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-/* 🌙 Modo oscuro */
-@media (prefers-color-scheme: dark) {
-  .text-white,
-  .card-text,
-  .v-toolbar-title,
-  .v-btn {
-    color: white !important;
-  }
+.video-player,
+.camera-player {
+  width: 100%;
+  height: 360px;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+.camera-container {
+  position: relative;
+  min-height: 360px;
+  background: #000;
+}
+
+.camera-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 360px;
+  color: #999;
+}
+
+.stat-card {
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stat-value {
+  color: #FF6600;
+}
+
+.stat-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.timer-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+:deep(.v-toolbar-title) {
+  color: white !important;
+}
+
+:deep(.v-btn) {
+  color: white !important;
+}
+
+:deep(.v-app-bar .v-btn .v-icon) {
+  color: white !important;
 }
 </style>
