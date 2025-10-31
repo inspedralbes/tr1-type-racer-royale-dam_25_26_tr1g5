@@ -79,6 +79,17 @@ const resetStats = () => {
 const goBack = () => {
   router.push({ name: 'BuscadorExercici' })
 }
+const finalitzarSessio = () => {
+  pauseTimer()
+  router.push({
+    name: 'ResultatsExercici',
+    query: {
+      tecnica: (Math.random() * 100).toFixed(1), // simulació del % de tècnica
+      reps: exerciseCount.value
+    }
+  })
+}
+
 </script>
 
 <template>
@@ -95,9 +106,9 @@ const goBack = () => {
     </v-app-bar>
 
     <v-main>
-      <v-container class="py-6" fluid>
+      <v-container class="py-3" fluid>
         <v-row>
-          <v-col cols="12" md="6">
+          <v-col cols="6" md="6">
             <v-card class="video-card" elevation="3">
               <v-card-title class="text-h6 bg-grey-darken-3 text-white">
                 <v-icon class="me-2">mdi-play-circle</v-icon>
@@ -109,7 +120,7 @@ const goBack = () => {
             </v-card>
           </v-col>
 
-          <v-col cols="12" md="6">
+          <v-col cols="6" md="6">
             <v-card class="camera-card" elevation="3">
               <v-card-title class="text-h6 bg-grey-darken-3 text-white">
                 <v-icon class="me-2">mdi-camera</v-icon>
@@ -224,6 +235,20 @@ const goBack = () => {
           </v-col>
         </v-row>
       </v-container>
+      <v-row class="mt-6">
+  <v-col cols="12" class="text-center">
+    <v-btn
+      color="#FF6600"
+      size="large"
+      variant="flat"
+      @click="finalitzarSessio"
+    >
+      <v-icon class="me-2">mdi-flag-checkered</v-icon>
+      Finalitzar Sessió
+    </v-btn>
+  </v-col>
+</v-row>
+
     </v-main>
   </v-app>
 </template>

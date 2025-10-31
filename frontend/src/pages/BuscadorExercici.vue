@@ -131,7 +131,7 @@ const login = () => {
 
 
 
-    <v-footer color="#FF6600" class="text-center d-flex align-center justify-center" height="80" style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;"
+    <v-footer color="#FF6600" class="text-center d-flex align-center justify-center" height="60" style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;"
     >
       <v-img
         src="/fitcamicon.png"
