@@ -19,7 +19,17 @@ interface Room {
   players: Player[]
 }
 
+// ... dins del <script setup> de Exercici.vue
+
+// ...
 const route = useRoute()
+// ...
+
+// Dades de la Càmera i Vídeo
+// AQUESTA LÍNIA ÉS CLAU
+const videoUrl = ref((route.query.video as string) || '/videos/Download.mp4') 
+
+// ...
 const router = useRouter()
 const socket = inject('socket') as Socket
 
@@ -33,7 +43,6 @@ const roomState = ref<Room | null>(null)
 const myNickname = ref(localStorage.getItem('userName') || 'Tu')
 
 // Dades de la Càmera i Vídeo
-const videoUrl = ref('/videos/Download.mp4')
 const videoStream = ref<MediaStream | null>(null)
 const cameraElement = ref<HTMLVideoElement | null>(null)
 const cameraError = ref(false)
@@ -57,7 +66,7 @@ const setupSocketListeners = () => {
   socket.on('session:error', (message: string) => {
     // Usamos un div custom en vez de alert, pero para el ejemplo sirve
     alert(`Error de sessió: ${message}. Tornant al lobby...`)
-    goBack()
+    // goBack() //
   })
   
   // 3. ¡IMPORTANTE! Pedimos el estado actual de la sala
@@ -221,8 +230,10 @@ const finalitzarSessio = () => {
                 Video de demostració
               </v-card-title>
               <v-card-text class="pa-0">
-                <video :src="videoUrl" controls autoplay class="video-player" />
-              </v-card-text>
+                  <v-img
+                  :src="videoUrl"
+                  class="video-player"
+                />              </v-card-text>
             </v-card>
           </v-col>
 

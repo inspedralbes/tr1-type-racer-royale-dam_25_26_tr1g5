@@ -48,13 +48,18 @@ const filteredExercises = computed(() => {
 
 // --- CAMBIADO ---
 // Ara redirigeix al Lobby de la Sessió, no a l'exercici directament
+// ...
 const goToExercise = (exercise: Exercise) => {
   router.push({
-    name: 'SessioLobby', // <-- CAMBIADO
-    params: { exerciseId: exercise.id }, // <-- CAMBIADO
-    query: { name: exercise.name }
+    name: 'SessioLobby',
+    params: { exerciseId: exercise.id },
+    query: { 
+      name: exercise.name,
+      video: exercise.gif // <-- AQUESTA LÍNIA ÉS CLAU
+    }
   })
 }
+// ...
 
 // --- CAMBIADO ---
 // Funció de login ara guarda a localStorage

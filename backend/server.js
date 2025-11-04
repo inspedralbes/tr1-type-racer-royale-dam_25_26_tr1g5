@@ -1,10 +1,18 @@
 // server.js
 const express = require('express');
+const path = require('path'); // Assegura't d'importar 'path'
+const app = express();
+
+// ... (la teva configuració de sockets, etc.)
+
+// AFEGEIX AQUESTA LÍNIA:
+// Li diu a Express que la carpeta 'public' s'ha de fer servir per a arxius estàtics
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ... (la resta del teu codi, com app.listen(3000))
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-
-const app = express();
 const httpServer = http.createServer(app);
 const PORT = 3001;
 

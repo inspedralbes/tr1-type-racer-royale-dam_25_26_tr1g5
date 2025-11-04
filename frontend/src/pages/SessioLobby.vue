@@ -26,6 +26,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const router = useRouter()
+
 const socket = inject('socket') as Socket
 
 const exerciseName = ref((route.query.name as string) || 'Sessió')
@@ -64,7 +65,8 @@ onMounted(() => {
       params: { id: props.exerciseId },
       query: { 
         name: exerciseName.value,
-        sessionId: room.id // <-- La clave para el modo multijugador
+        sessionId: room.id, // <-- La clave para el modo multijugador
+        video: route.query.video // <-- AQUESTA LÍNIA ÉS CLAU
       }
     })
   })
@@ -84,15 +86,36 @@ onUnmounted(() => {
   // No desconectamos el socket, el usuario puede volver al buscador
 })
 
-// 1. Iniciar en modo individual (comportamiento antiguo)
+// 1. Iniciar en modo individual (CORREGIT)
 const startSolo = () => {
   router.push({
     name: 'Exercici',
     params: { id: props.exerciseId },
-    query: { name: exerciseName.value }
-    // No pasamos sessionId
+    query: { 
+      name: exerciseName.value,
+      video: route.query.video // <-- AQUESTA LÍNIA ÉS CLAU
+    }
   })
 }
+
+// ...
+onMounted(() => {
+  // ...
+  // Evento que se dispara DESPUÉS de crear o unirse (COMPROVA AIXÒ)
+  socket.on('session:joined', (room: Room) => {
+    loading.value = false
+    router.push({
+      name: 'Exercici',
+      params: { id: props.exerciseId },
+      query: { 
+        name: exerciseName.value,
+        sessionId: room.id,
+        video: route.query.video // <-- AQUESTA LÍNIA TAMBÉ ÉS CLAU
+      }
+    })
+  })
+  // ...
+})
 
 // 2. Crear una nova sala de grup (MODIFICAT)
 const createGroupSession = () => {
