@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue' // Afegit onMounted
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -26,6 +26,14 @@ const exercises = ref<Exercise[]>([
   { id: 'elevacions-laterals', name: 'Elevacions laterals', gif: '/videos/elevacioneslaterales.gif' }
 ])
 
+// AFEGIT: Carregar el nom d'usuari en muntar el component
+onMounted(() => {
+  const storedName = localStorage.getItem('userName')
+  if (storedName) {
+    userName.value = storedName
+  }
+})
+
 const normalize = (str: string) =>
   str
     .normalize('NFD')
@@ -38,17 +46,23 @@ const filteredExercises = computed(() => {
   return exercises.value.filter(ex => normalize(ex.name).includes(term))
 })
 
+// --- CAMBIADO ---
+// Ara redirigeix al Lobby de la Sessió, no a l'exercici directament
 const goToExercise = (exercise: Exercise) => {
   router.push({
-    name: 'Exercici',
-    params: { id: exercise.id },
+    name: 'SessioLobby', // <-- CAMBIADO
+    params: { exerciseId: exercise.id }, // <-- CAMBIADO
     query: { name: exercise.name }
   })
 }
 
+// --- CAMBIADO ---
+// Funció de login ara guarda a localStorage
 const login = () => {
   if (tempName.value.trim()) {
-    userName.value = tempName.value.trim()
+    const name = tempName.value.trim()
+    userName.value = name
+    localStorage.setItem('userName', name) // <-- AFEGIT
     tempName.value = ''
     loginDialog.value = false
   }
@@ -154,6 +168,7 @@ const login = () => {
             variant="outlined"
             density="comfortable"
             hide-details
+            @keyup.enter="login"
           />
         </v-card-text>
         <v-card-actions class="pa-4">
