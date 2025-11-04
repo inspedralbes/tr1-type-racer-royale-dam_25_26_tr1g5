@@ -1,17 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import BuscadorExercici from '../pages/BuscadorExercici.vue'
-import Exercici from '../pages/Exercici.vue'
-import index from '@/pages/index.vue'
 
 const routes = [
-  { path: '/', name: 'index', component: index },
-  { path: '/', name: 'BuscadorExercici', component: BuscadorExercici },
-  { path: '/exercici', name: 'Exercici', component: Exercici },
-  { path: '/resultats', name: 'ResultatsExercici', component: () => import('@/pages/ResultatsExercici.vue') }
+  { path:'/', name:'Home', component: () => import('../pages/index.vue') },
+  { path:'/login', name:'Login', component: () => import('../pages/login.vue') },
+  { path:'/register', name:'Register', component: () => import('../pages/register.vue') },
+  { path:'/exercicis', name:'BuscadorExercici', component: () => import('../pages/buscadorexercici.vue') },
+  { path:'/exercici/:id', name:'Exercici', component: () => import('../pages/exercici.vue') }
 ]
 
+
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),  
   routes,
 })
 

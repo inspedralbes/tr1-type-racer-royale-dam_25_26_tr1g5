@@ -94,6 +94,7 @@ const finalitzarSessio = () => {
 
 <template>
   <v-app>
+    <NavBar />
     <v-app-bar color="#FF6600" elevation="0">
       <v-container class="d-flex align-center pa-0">
         <v-btn icon @click="goBack" class="me-2">
@@ -127,13 +128,7 @@ const finalitzarSessio = () => {
                 La teva càmera
               </v-card-title>
               <v-card-text class="pa-0 camera-container">
-                <video
-                  v-if="!cameraError"
-                  ref="cameraElement"
-                  autoplay
-                  playsinline
-                  class="camera-player"
-                />
+                <video v-if="!cameraError" ref="cameraElement" autoplay playsinline class="camera-player" />
                 <div v-else class="camera-error">
                   <v-icon size="64" color="error">mdi-camera-off</v-icon>
                   <p class="mt-4">No s'ha pogut accedir a la càmera</p>
@@ -156,13 +151,7 @@ const finalitzarSessio = () => {
                 <div class="stat-label text-body-1 mb-4">
                   Exercicis Completats
                 </div>
-                <v-btn
-                  color="#FF6600"
-                  variant="flat"
-                  block
-                  size="large"
-                  @click="incrementExercises"
-                >
+                <v-btn color="#FF6600" variant="flat" block size="large" @click="incrementExercises">
                   <v-icon class="me-2">mdi-plus</v-icon>
                   Afegir exercici
                 </v-btn>
@@ -183,23 +172,11 @@ const finalitzarSessio = () => {
                   Temps de Sessió
                 </div>
                 <div class="timer-buttons">
-                  <v-btn
-                    color="success"
-                    variant="flat"
-                    :disabled="isTimerRunning"
-                    @click="startTimer"
-                    size="small"
-                  >
+                  <v-btn color="success" variant="flat" :disabled="isTimerRunning" @click="startTimer" size="small">
                     <v-icon class="me-1">mdi-play</v-icon>
                     Iniciar
                   </v-btn>
-                  <v-btn
-                    color="warning"
-                    variant="flat"
-                    :disabled="!isTimerRunning"
-                    @click="pauseTimer"
-                    size="small"
-                  >
+                  <v-btn color="warning" variant="flat" :disabled="!isTimerRunning" @click="pauseTimer" size="small">
                     <v-icon class="me-1">mdi-pause</v-icon>
                     Pausar
                   </v-btn>
@@ -220,13 +197,7 @@ const finalitzarSessio = () => {
                 <div class="stat-label text-body-1 mb-4">
                   Calories Cremades
                 </div>
-                <v-btn
-                  color="error"
-                  variant="outlined"
-                  block
-                  size="large"
-                  @click="resetStats"
-                >
+                <v-btn color="error" variant="outlined" block size="large" @click="resetStats">
                   <v-icon class="me-2">mdi-refresh</v-icon>
                   Reiniciar
                 </v-btn>
@@ -236,18 +207,13 @@ const finalitzarSessio = () => {
         </v-row>
       </v-container>
       <v-row class="mt-6">
-  <v-col cols="12" class="text-center">
-    <v-btn
-      color="#FF6600"
-      size="large"
-      variant="flat"
-      @click="finalitzarSessio"
-    >
-      <v-icon class="me-2">mdi-flag-checkered</v-icon>
-      Finalitzar Sessió
-    </v-btn>
-  </v-col>
-</v-row>
+        <v-col cols="12" class="text-center">
+          <v-btn color="#FF6600" size="large" variant="flat" @click="finalitzarSessio">
+            <v-icon class="me-2">mdi-flag-checkered</v-icon>
+            Finalitzar Sessió
+          </v-btn>
+        </v-col>
+      </v-row>
 
     </v-main>
   </v-app>

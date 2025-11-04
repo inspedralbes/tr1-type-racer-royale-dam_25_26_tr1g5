@@ -19,9 +19,11 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
-    '/BuscadorExercici': RouteRecordInfo<'/BuscadorExercici', '/BuscadorExercici', Record<never, never>, Record<never, never>>,
-    '/Exercici': RouteRecordInfo<'/Exercici', '/Exercici', Record<never, never>, Record<never, never>>,
-    '/ResultatsExercici': RouteRecordInfo<'/ResultatsExercici', '/ResultatsExercici', Record<never, never>, Record<never, never>>,
+    '/buscadorexercici': RouteRecordInfo<'/buscadorexercici', '/buscadorexercici', Record<never, never>, Record<never, never>>,
+    '/exercici': RouteRecordInfo<'/exercici', '/exercici', Record<never, never>, Record<never, never>>,
+    '/login': RouteRecordInfo<'/login', '/login', Record<never, never>, Record<never, never>>,
+    '/register': RouteRecordInfo<'/register', '/register', Record<never, never>, Record<never, never>>,
+    '/resultatsexercici': RouteRecordInfo<'/resultatsexercici', '/resultatsexercici', Record<never, never>, Record<never, never>>,
   }
 
   /**
@@ -39,16 +41,24 @@ declare module 'vue-router/auto-routes' {
       routes: '/'
       views: never
     }
-    'src/pages/BuscadorExercici.vue': {
-      routes: '/BuscadorExercici'
+    'src/pages/buscadorexercici.vue': {
+      routes: '/buscadorexercici'
       views: never
     }
-    'src/pages/Exercici.vue': {
-      routes: '/Exercici'
+    'src/pages/exercici.vue': {
+      routes: '/exercici'
       views: never
     }
-    'src/pages/ResultatsExercici.vue': {
-      routes: '/ResultatsExercici'
+    'src/pages/login.vue': {
+      routes: '/login'
+      views: never
+    }
+    'src/pages/register.vue': {
+      routes: '/register'
+      views: never
+    }
+    'src/pages/resultatsexercici.vue': {
+      routes: '/resultatsexercici'
       views: never
     }
   }
