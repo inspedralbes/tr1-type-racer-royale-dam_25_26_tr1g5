@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import VideoProcessor from '@/components/VideoProcessor.vue' // 👈 importa tu componente
 
 const route = useRoute()
 const router = useRouter()
@@ -8,34 +9,11 @@ const exerciseName = (route.query.name as string) || 'Exercici'
 
 const videoUrl = ref('/videos/Download.mp4')
 
-const videoStream = ref<MediaStream | null>(null)
-const cameraElement = ref<HTMLVideoElement | null>(null)
-const cameraError = ref(false)
-
 const exerciseCount = ref(0)
 const sessionTime = ref(0)
 const caloriesBurned = ref(0)
 const isTimerRunning = ref(false)
 let intervalId: number | null = null
-
-onMounted(async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    videoStream.value = stream
-    if (cameraElement.value) {
-      cameraElement.value.srcObject = stream
-    }
-    cameraError.value = false
-  } catch (error) {
-    console.error('Error al accedir a la càmera:', error)
-    cameraError.value = true
-  }
-})
-
-onUnmounted(() => {
-  videoStream.value?.getTracks().forEach(track => track.stop())
-  if (intervalId !== null) clearInterval(intervalId)
-})
 
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600)
@@ -79,17 +57,17 @@ const resetStats = () => {
 const goBack = () => {
   router.push({ name: 'BuscadorExercici' })
 }
+
 const finalitzarSessio = () => {
   pauseTimer()
   router.push({
     name: 'ResultatsExercici',
     query: {
-      tecnica: (Math.random() * 100).toFixed(1), // simulació del % de tècnica
+      tecnica: (Math.random() * 100).toFixed(1),
       reps: exerciseCount.value
     }
   })
 }
-
 </script>
 
 <template>
@@ -108,6 +86,7 @@ const finalitzarSessio = () => {
     <v-main>
       <v-container class="py-3" fluid>
         <v-row>
+          <!-- VIDEO DEMOSTRACIÓN -->
           <v-col cols="6" md="6">
             <v-card class="video-card" elevation="3">
               <v-card-title class="text-h6 bg-grey-darken-3 text-white">
@@ -120,29 +99,21 @@ const finalitzarSessio = () => {
             </v-card>
           </v-col>
 
+          <!-- CÁMARA CON POSE DETECTION -->
           <v-col cols="6" md="6">
             <v-card class="camera-card" elevation="3">
               <v-card-title class="text-h6 bg-grey-darken-3 text-white">
-                <v-icon class="me-2">mdi-camera</v-icon>
-                La teva càmera
+                <v-icon class="me-2">mdi-run</v-icon>
+                Seguiment de moviment (IA)
               </v-card-title>
               <v-card-text class="pa-0 camera-container">
-                <video
-                  v-if="!cameraError"
-                  ref="cameraElement"
-                  autoplay
-                  playsinline
-                  class="camera-player"
-                />
-                <div v-else class="camera-error">
-                  <v-icon size="64" color="error">mdi-camera-off</v-icon>
-                  <p class="mt-4">No s'ha pogut accedir a la càmera</p>
-                </div>
+                <VideoProcessor /> <!-- 👈 Aquí insertamos el componente -->
               </v-card-text>
             </v-card>
           </v-col>
         </v-row>
 
+        <!-- ESTADÍSTICAS -->
         <v-row class="mt-4">
           <v-col cols="12" sm="6" md="4">
             <v-card class="stat-card" elevation="3">
@@ -156,13 +127,7 @@ const finalitzarSessio = () => {
                 <div class="stat-label text-body-1 mb-4">
                   Exercicis Completats
                 </div>
-                <v-btn
-                  color="#FF6600"
-                  variant="flat"
-                  block
-                  size="large"
-                  @click="incrementExercises"
-                >
+                <v-btn color="#FF6600" variant="flat" block size="large" @click="incrementExercises">
                   <v-icon class="me-2">mdi-plus</v-icon>
                   Afegir exercici
                 </v-btn>
@@ -179,9 +144,7 @@ const finalitzarSessio = () => {
                 <div class="stat-value text-h3 font-weight-bold mb-2">
                   {{ formatTime(sessionTime) }}
                 </div>
-                <div class="stat-label text-body-1 mb-4">
-                  Temps de Sessió
-                </div>
+                <div class="stat-label text-body-1 mb-4">Temps de Sessió</div>
                 <div class="timer-buttons">
                   <v-btn
                     color="success"
@@ -217,16 +180,8 @@ const finalitzarSessio = () => {
                 <div class="stat-value text-h3 font-weight-bold mb-2">
                   {{ caloriesBurned }}
                 </div>
-                <div class="stat-label text-body-1 mb-4">
-                  Calories Cremades
-                </div>
-                <v-btn
-                  color="error"
-                  variant="outlined"
-                  block
-                  size="large"
-                  @click="resetStats"
-                >
+                <div class="stat-label text-body-1 mb-4">Calories Cremades</div>
+                <v-btn color="error" variant="outlined" block size="large" @click="resetStats">
                   <v-icon class="me-2">mdi-refresh</v-icon>
                   Reiniciar
                 </v-btn>
@@ -234,21 +189,17 @@ const finalitzarSessio = () => {
             </v-card>
           </v-col>
         </v-row>
-      </v-container>
-      <v-row class="mt-6">
-  <v-col cols="12" class="text-center">
-    <v-btn
-      color="#FF6600"
-      size="large"
-      variant="flat"
-      @click="finalitzarSessio"
-    >
-      <v-icon class="me-2">mdi-flag-checkered</v-icon>
-      Finalitzar Sessió
-    </v-btn>
-  </v-col>
-</v-row>
 
+        <!-- BOTÓN FINAL -->
+        <v-row class="mt-6">
+          <v-col cols="12" class="text-center">
+            <v-btn color="#FF6600" size="large" variant="flat" @click="finalitzarSessio">
+              <v-icon class="me-2">mdi-flag-checkered</v-icon>
+              Finalitzar Sessió
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-container>
     </v-main>
   </v-app>
 </template>
@@ -260,28 +211,17 @@ const finalitzarSessio = () => {
   overflow: hidden;
 }
 
-.video-player,
-.camera-player {
+.video-player {
   width: 100%;
-  height: 360px;
+  height: 550px;
   object-fit: contain;
   background: #000;
-  display: block;
 }
 
 .camera-container {
-  position: relative;
+  position: sticky;
   min-height: 360px;
   background: #000;
-}
-
-.camera-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 360px;
-  color: #999;
 }
 
 .stat-card {
@@ -316,14 +256,8 @@ const finalitzarSessio = () => {
   justify-content: center;
 }
 
-:deep(.v-toolbar-title) {
-  color: white !important;
-}
-
-:deep(.v-btn) {
-  color: white !important;
-}
-
+:deep(.v-toolbar-title),
+:deep(.v-btn),
 :deep(.v-app-bar .v-btn .v-icon) {
   color: white !important;
 }
