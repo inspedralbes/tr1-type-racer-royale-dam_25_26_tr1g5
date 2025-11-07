@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import VideoProcessor from '@/components/VideoProcessor.vue' // 👈 importa tu componente
+import PoseSquad from '@/components/PoseSquad.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -107,7 +108,7 @@ const finalitzarSessio = () => {
                 Seguiment de moviment (IA)
               </v-card-title>
               <v-card-text class="pa-0 camera-container">
-                <VideoProcessor /> <!-- 👈 Aquí insertamos el componente -->
+                <PoseSquad /> <!-- 👈 Aquí insertamos el componente -->
               </v-card-text>
             </v-card>
           </v-col>

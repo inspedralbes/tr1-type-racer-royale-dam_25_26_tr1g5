@@ -5,23 +5,21 @@ import '@tensorflow/tfjs-backend-webgl'
 import * as poseDetection from '@tensorflow-models/pose-detection'
 
 /* ------------------------------------------
-   ESTAT: càmera, vídeo i detecció
+   ESTADO PRINCIPAL
 ------------------------------------------ */
 const devices = ref([])
 const selectedId = ref('')
 const currentStream = ref(null)
-
 const videoEl = ref(null)
 const canvasRef = ref(null)
 
 let detector = null
 let rafId = 0
-
 const sourceMode = ref('camera')
 const fileUrl = ref(null)
 
 /* ------------------------------------------
-   FUNCIONS AUXILIARS
+   FUNCIONES AUXILIARES
 ------------------------------------------ */
 function ema(prev, x, alpha = 0.2) {
     if (!Number.isFinite(x)) return prev
@@ -45,16 +43,12 @@ function angleABC(A, B, C) {
     if (!m1 || !m2) return null
     return Math.acos(Math.min(1, Math.max(-1, dot / (m1 * m2)))) * 180 / Math.PI
 }
-function inclinationDeg(A, B) {
-    if (!A || !B) return null
-    return Math.atan2(B.y - A.y, B.x - A.x) * 180 / Math.PI
-}
 function normalizeKP(kp, w, h) {
     return kp ? { ...kp, nx: kp.x / w, ny: kp.y / h } : null
 }
 
 /* ------------------------------------------
-   DIBUIX D'ESQUELET
+   DIBUJO DEL ESQUELETO
 ------------------------------------------ */
 function drawSkeleton(ctx, keypoints) {
     if (!ctx || !keypoints?.length) return
@@ -80,45 +74,18 @@ function drawSkeleton(ctx, keypoints) {
 }
 
 /* ------------------------------------------
-   ESTAT DE LES FEATURES VISUALS
+   CONTADOR DE SENTADILLAS (solo piernas)
 ------------------------------------------ */
-const features = ref(null)
-
-const seen = reactive({
-    top: new Set(), angles: new Set(),
-    inclinations: new Set(), velocities: new Set(),
-    normalized: new Set(), keypointNames: new Set()
-})
-
-watch(features, (f) => {
-    if (!f) return
-    Object.keys(f).forEach(k => {
-        if (!['angles', 'inclinations', 'velocities', 'normalized', 'keypoints'].includes(k)) {
-            seen.top.add(k)
-        }
-    })
-    if (f.angles) Object.keys(f.angles).forEach(k => seen.angles.add(k))
-    if (f.inclinations) Object.keys(f.inclinations).forEach(k => seen.inclinations.add(k))
-    if (f.velocities) Object.keys(f.velocities).forEach(k => seen.velocities.add(k))
-    if (f.normalized) Object.keys(f.normalized).forEach(k => seen.normalized.add(k))
-    if (Array.isArray(f.keypoints)) {
-        f.keypoints.forEach((kp, idx) => seen.keypointNames.add(kp?.name ?? String(idx)))
-    }
-}, { immediate: true })
-
-function fmt(val, digits = 2) {
-    if (val == null || Number.isNaN(val)) return '—'
-    if (typeof val === 'number' && Number.isFinite(val)) return val.toFixed(digits)
-    return String(val)
-}
+const squatCount = ref(0)
+let isDown = false
 
 /* ------------------------------------------
-   CÀMERA I LOOP PRINCIPAL
+   LOOP PRINCIPAL Y CÁMARA
 ------------------------------------------ */
 async function listVideoInputs() {
     const all = await navigator.mediaDevices.enumerateDevices()
     const cams = all.filter(d => d.kind === 'videoinput')
-    devices.value = cams.map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }))
+    devices.value = cams.map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Cámara ${i + 1}` }))
     if (!selectedId.value && devices.value.length) selectedId.value = devices.value[0].deviceId
 }
 
@@ -184,7 +151,7 @@ async function loop() {
     const dt = _prevTime ? (tNow - _prevTime) / 1000 : 0
     const fpsNow = dt > 0 ? 1 / dt : 0
     _prevTime = tNow
-    const fpsSmooth = (_fpsEma = ema(_fpsEma, fpsNow, 0.2))
+    _fpsEma = ema(_fpsEma, fpsNow, 0.2)
 
     let keypoints = []
     try {
@@ -196,65 +163,35 @@ async function loop() {
     else ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     const W = video.videoWidth, H = video.videoHeight
-    const byName = {}, normByName = {}
-    for (const kp of keypoints) {
-        byName[kp.name] = kp
-        normByName[kp.name] = normalizeKP(kp, W, H)
-    }
+    const byName = {}
+    for (const kp of keypoints) byName[kp.name] = kp
     const L = n => byName[n]
 
-    const track = ['left_wrist', 'right_wrist', 'left_ankle', 'right_ankle', 'nose']
-    const velocities = {}
-    for (const n of track) {
-        const cur = normByName[n], prev = _prevNormByName?.[n]
-        if (cur && prev && dt > 0) {
-            const vx = (cur.nx - prev.nx) / dt, vy = (cur.ny - prev.ny) / dt
-            velocities[n] = { vx, vy, v: Math.hypot(vx, vy) }
-        } else velocities[n] = { vx: null, vy: null, v: null }
-    }
-    _prevNormByName = normByName
-
     const angles = {
-        leftElbow: angleABC(L('left_shoulder'), L('left_elbow'), L('left_wrist')),
-        rightElbow: angleABC(L('right_shoulder'), L('right_elbow'), L('right_wrist')),
-        leftKnee: angleABC(L('left_hip'), L('left_knee'), L('left_ankle')),
-        rightKnee: angleABC(L('right_hip'), L('right_knee'), L('right_ankle')),
-        leftHip: angleABC(L('left_shoulder'), L('left_hip'), L('left_knee')),
-        rightHip: angleABC(L('right_shoulder'), L('right_hip'), L('right_knee'))
+        leftKnee: angleABC(L('left_hip'), L('left_knee'), L('left_ankle'))
     }
 
-    const inclinations = {
-        shoulders: inclinationDeg(L('left_shoulder'), L('right_shoulder')),
-        hips: inclinationDeg(L('left_hip'), L('right_hip'))
-    }
+    // --- Lógica del contador SOLO piernas ---
+    const leftKneeAngle = angles.leftKnee
+    if (leftKneeAngle) {
+        const downThreshold = 70
+        const upThreshold = 160
 
-    const shoulderWidth = dist(L('left_shoulder'), L('right_shoulder'))
-    const hipWidth = dist(L('left_hip'), L('right_hip'))
-    const diag = Math.hypot(W, H) || 1
-    const normalized = {
-        shoulderWidth_px: shoulderWidth,
-        hipWidth_px: hipWidth,
-        shoulderWidth_norm: shoulderWidth / diag,
-        hipWidth_norm: hipWidth / diag
-    }
-
-    const meanScore = keypoints.map(k => k.score ?? 0).reduce((a, b) => a + b, 0) / (keypoints.length || 1)
-
-    features.value = {
-        fps: fpsNow, fpsSmooth, score: meanScore,
-        keypoints, angles, inclinations, velocities, normalized
+        if (leftKneeAngle < downThreshold && !isDown) {
+            isDown = true
+        }
+        if (leftKneeAngle > upThreshold && isDown) {
+            squatCount.value++
+            isDown = false
+            console.log(`Repeticiones: ${squatCount.value}`)
+        }
     }
 
     rafId = requestAnimationFrame(loop)
 }
 
 /* ------------------------------------------
-   CONTADOR SENTADILLA
------------------------------------------- */
-
-
-/* ------------------------------------------
-   CICLES DE VIDA
+   CICLO DE VIDA
 ------------------------------------------ */
 onMounted(async () => {
     await tf.setBackend('webgl')
@@ -285,8 +222,12 @@ watch(sourceMode, mode => { if (mode === 'camera') startCamera(selectedId.value)
             <canvas ref="canvasRef" class="overlay"></canvas>
         </div>
 
+        <div class="counter-panel">
+            <h2>Repeticiones: {{ squatCount }}</h2>
+        </div>
+
         <div class="source-select">
-            <label><input type="radio" value="camera" v-model="sourceMode"> Càmera</label>
+            <label><input type="radio" value="camera" v-model="sourceMode"> Cámara</label>
             <label><input type="radio" value="file" v-model="sourceMode"> Vídeo local</label>
             <input v-if="sourceMode === 'file'" type="file" accept="video/*"
                 @change="e => e.target.files?.[0] && startFileVideo(e.target.files[0])" />
@@ -305,7 +246,7 @@ watch(sourceMode, mode => { if (mode === 'camera') startCamera(selectedId.value)
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .stage {
@@ -330,12 +271,23 @@ watch(sourceMode, mode => { if (mode === 'camera') startCamera(selectedId.value)
     pointer-events: none;
 }
 
-.panel {
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 10px;
-    background: #111;
-    color: #fff;
-    width: min(100%, 720px);
+.counter-panel {
+    background: rgba(0, 0, 0, 0.7);
+    color: #00ff88;
+    font-size: 2rem;
+    font-weight: bold;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.source-select,
+.camera-select {
+    color: white;
+    font-size: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
 }
 </style>
