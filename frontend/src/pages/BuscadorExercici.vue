@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -9,22 +9,91 @@ const loginDialog = ref(false)
 const tempName = ref('')
 const userName = ref('')
 
+const exerciseDialog = ref(false)
+const selectedExercise = ref<Exercise | null>(null)
+
 interface Exercise {
   id: string
   name: string
   gif: string
+  description: string
+  muscles: string
+  equipment: string
 }
 
 const exercises = ref<Exercise[]>([
-  { id: 'press-banca', name: 'Press de banca', gif: '/videos/pressbanca.gif' },
-  { id: 'sentadilla', name: 'Sentadilla amb barra', gif: '/videos/sentadillaconbarra.gif' },
-  { id: 'pes-mort', name: 'Pes mort', gif: '/videos/pesomuerto.gif' },
-  { id: 'press-militar', name: 'Press militar', gif: '/videos/pressmilitar.gif' },
-  { id: 'remo-barra', name: 'Remo amb barra', gif: '/videos/remoconbarra.gif' },
-  { id: 'curl-biceps', name: 'Curl de bíceps amb barra', gif: '/videos/curlbicepsconbarra.gif' },
-  { id: 'extensio-triceps', name: 'Extensió de tríceps en polea', gif: '/videos/extensiontricepsenpolea.gif' },
-  { id: 'elevacions-laterals', name: 'Elevacions laterals', gif: '/videos/elevacioneslaterales.gif' }
+  {
+    id: 'press-banca',
+    name: 'Press de banca',
+    gif: '/videos/pressbanca.gif',
+    description: 'Exercici fonamental per al desenvolupament del pit, treballant també espatlles i tríceps.',
+    muscles: 'Pectoral major, Deltoides anterior, Tríceps',
+    equipment: 'Barra i banc pla'
+  },
+  {
+    id: 'sentadilla',
+    name: 'Sentadilla amb barra',
+    gif: '/videos/sentadillaconbarra.gif',
+    description: 'El rei dels exercicis de cames, treballa tots els músculs del tren inferior.',
+    muscles: 'Quadríceps, Glútis, Isquiotibials',
+    equipment: 'Barra i rack de sentadilles'
+  },
+  {
+    id: 'pes-mort',
+    name: 'Pes mort',
+    gif: '/videos/pesomuerto.gif',
+    description: 'Exercici complet que treballa múltiples grups musculars, especialment la cadena posterior.',
+    muscles: 'Isquiotibials, Glútis, Erectores de columna',
+    equipment: 'Barra'
+  },
+  {
+    id: 'press-militar',
+    name: 'Press militar',
+    gif: '/videos/pressmilitar.gif',
+    description: 'Exercici per al desenvolupament de les espatlles, principalment el deltoides.',
+    muscles: 'Deltoides, Tríceps, Core',
+    equipment: 'Barra'
+  },
+  {
+    id: 'remo-barra',
+    name: 'Remo amb barra',
+    gif: '/videos/remoconbarra.gif',
+    description: 'Exercici essencial per al desenvolupament de l\'esquena i la postura.',
+    muscles: 'Dorsal ample, Trapezi, Romboides',
+    equipment: 'Barra'
+  },
+  {
+    id: 'curl-biceps',
+    name: 'Curl de bíceps amb barra',
+    gif: '/videos/curlbicepsconbarra.gif',
+    description: 'Exercici d\'aïllament per al desenvolupament dels bíceps.',
+    muscles: 'Bíceps braquial, Braquial anterior',
+    equipment: 'Barra'
+  },
+  {
+    id: 'extensio-triceps',
+    name: 'Extensió de tríceps en polea',
+    gif: '/videos/extensiontricepsenpolea.gif',
+    description: 'Exercici d\'aïllament per als tríceps utilitzant polea.',
+    muscles: 'Tríceps braquial',
+    equipment: 'Polea alta i corda o barra'
+  },
+  {
+    id: 'elevacions-laterals',
+    name: 'Elevacions laterals',
+    gif: '/videos/elevacioneslaterales.gif',
+    description: 'Exercici d\'aïllament per al deltoides lateral, donant amplada a les espatlles.',
+    muscles: 'Deltoides lateral',
+    equipment: 'Manuelles'
+  }
 ])
+
+onMounted(() => {
+  const storedName = localStorage.getItem('userName')
+  if (storedName) {
+    userName.value = storedName
+  }
+})
 
 const normalize = (str: string) =>
   str
@@ -38,17 +107,34 @@ const filteredExercises = computed(() => {
   return exercises.value.filter(ex => normalize(ex.name).includes(term))
 })
 
-const goToExercise = (exercise: Exercise) => {
-  router.push({
-    name: 'Exercici',
-    params: { id: exercise.id },
-    query: { name: exercise.name }
-  })
+const openExerciseDialog = (exercise: Exercise) => {
+  selectedExercise.value = exercise
+  exerciseDialog.value = true
+}
+
+// --- MODIFICAT ---
+// Aquesta funció ara inclou el 'video' (GIF) en la query,
+// combinant la lògica dels dos fitxers.
+const confirmGoToLobby = () => {
+  if (selectedExercise.value) {
+    router.push({
+      name: 'SessioLobby',
+      params: { exerciseId: selectedExercise.value.id },
+      query: {
+        name: selectedExercise.value.name,
+        video: selectedExercise.value.gif // <-- Aquesta línia és la millora del segon fitxer
+      }
+    })
+  }
+  exerciseDialog.value = false
+  selectedExercise.value = null
 }
 
 const login = () => {
   if (tempName.value.trim()) {
-    userName.value = tempName.value.trim()
+    const name = tempName.value.trim()
+    userName.value = name
+    localStorage.setItem('userName', name)
     tempName.value = ''
     loginDialog.value = false
   }
@@ -58,27 +144,25 @@ const login = () => {
 <template>
   <v-app>
     <v-app-bar app color="#FF6600" flat>
-  
-  <v-img
-    src="/fitcamicon.png"
-    alt="FitCam"
-    contain
-    max-height="128"
-    max-width="128"
-    class="me-2"
-  ></v-img>
+      <v-img
+        src="/fitcamicon.png"
+        alt="FitCam"
+        contain
+        max-height="128"
+        max-width="128"
+        class="me-2"
+      ></v-img>
 
-  <v-toolbar-title class="text-white text-h5 font-weight-bold">
-    Buscador d'exercicis
-  </v-toolbar-title>
+      <v-toolbar-title class="text-white text-h5 font-weight-bold">
+        Buscador d'exercicis
+      </v-toolbar-title>
 
-  <v-spacer></v-spacer>
+      <v-spacer></v-spacer>
 
-  <v-btn color="white" text class="text-none" @click="loginDialog = true">
-    {{ userName ? `Hola, ${userName}` : 'Log In / Registrar-se' }}
-  </v-btn>
-
-</v-app-bar>
+      <v-btn color="white" text class="text-none" @click="loginDialog = true">
+        {{ userName ? `Hola, ${userName}` : 'Log In / Registrar-se' }}
+      </v-btn>
+    </v-app-bar>
 
     <v-main>
       <v-container class="py-8" fluid>
@@ -110,7 +194,7 @@ const login = () => {
               class="exercise-card"
               elevation="2"
               height="200"
-              @click="goToExercise(exercise)"
+              @click="openExerciseDialog(exercise)"
               hover
             >
               <div class="card-background" />
@@ -129,9 +213,11 @@ const login = () => {
       </v-container>
     </v-main>
 
-
-
-    <v-footer color="#FF6600" class="text-center d-flex align-center justify-center" height="60" style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;"
+    <v-footer
+      color="#FF6600"
+      class="text-center d-flex align-center justify-center"
+      height="60"
+      style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;"
     >
       <v-img
         src="/fitcamicon.png"
@@ -154,6 +240,7 @@ const login = () => {
             variant="outlined"
             density="comfortable"
             hide-details
+            @keyup.enter="login"
           />
         </v-card-text>
         <v-card-actions class="pa-4">
@@ -163,6 +250,54 @@ const login = () => {
           </v-btn>
           <v-btn color="#FF6600" variant="flat" @click="login">
             Acceptar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="exerciseDialog" max-width="800">
+      <v-card v-if="selectedExercise">
+        <v-card-title class="text-h5 pa-4 bg-primary">
+          {{ selectedExercise.name }}
+        </v-card-title>
+
+        <v-card-text class="pa-4">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-img
+                :src="selectedExercise.gif"
+                :alt="`GIF de ${selectedExercise.name}`"
+                cover
+                height="300"
+                class="rounded-lg elevation-2"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <h3 class="text-h6 mb-3">Informació de l'exercici</h3>
+              <p class="text-body-1 mb-4">
+                {{ selectedExercise.description }}
+              </p>
+              <v-divider class="my-3"></v-divider>
+              <div class="mb-3">
+                <h4 class="text-subtitle-1 font-weight-bold mb-1">Músculs implicats:</h4>
+                <p class="text-body-2">{{ selectedExercise.muscles }}</p>
+              </div>
+              <div>
+                <h4 class="text-subtitle-1 font-weight-bold mb-1">Equipament:</h4>
+                <p class="text-body-2">{{ selectedExercise.equipment }}</p>
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="exerciseDialog = false">
+            Tancar
+          </v-btn>
+          <v-btn color="#FF6600" variant="flat" @click="confirmGoToLobby">
+            <v-icon start>mdi-account-group</v-icon>
+            Crear sala
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -235,5 +370,10 @@ const login = () => {
 
 :deep(.v-btn) {
   color: white !important;
+}
+
+.bg-primary {
+  background-color: #FF6600;
+  color: white;
 }
 </style>

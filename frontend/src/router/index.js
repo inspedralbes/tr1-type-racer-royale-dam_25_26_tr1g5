@@ -1,13 +1,34 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import BuscadorExercici from '../pages/BuscadorExercici.vue'
-import Exercici from '../pages/Exercici.vue'
-import index from '@/pages/index.vue'
+import Index from '@/pages/index.vue'
 
 const routes = [
-  { path: '/', name: 'index', component: index },
-  { path: '/', name: 'BuscadorExercici', component: BuscadorExercici },
-  { path: '/exercici', name: 'Exercici', component: Exercici },
-  { path: '/resultats', name: 'ResultatsExercici', component: () => import('@/pages/ResultatsExercici.vue') }
+  { 
+    path: '/', 
+    name: 'Home', // Renombrado de 'index' a 'Home'
+    component: Index 
+  },
+  { 
+    path: '/cercador', // Ruta corregida
+    name: 'BuscadorExercici', 
+    component: () => import('@/pages/BuscadorExercici.vue') 
+  },
+  { 
+    path: '/exercici/:id', // <-- CAMBIADO: necesita un ID
+    name: 'Exercici', 
+    component: () => import('@/pages/Exercici.vue') 
+  },
+  { 
+    path: '/resultats', 
+    name: 'ResultatsExercici', 
+    component: () => import('@/pages/ResultatsExercici.vue') 
+  },
+  // --- RUTA NUEVA ---
+  {
+    path: '/sessio/:exerciseId', // Ruta para el lobby de una sesión
+    name: 'SessioLobby',
+    component: () => import('@/pages/SessioLobby.vue'),
+    props: true // Esto pasa 'exerciseId' como prop al componente
+  }
 ]
 
 const router = createRouter({
