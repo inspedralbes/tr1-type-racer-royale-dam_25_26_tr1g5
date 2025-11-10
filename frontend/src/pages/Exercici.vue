@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, inject, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Socket } from 'socket.io-client'
 
-// --- DEFINICIONES (sin cambios) ---
 interface Player {
   id: string
   nickname: string
@@ -19,190 +18,169 @@ interface Room {
   players: Player[]
 }
 
-// ... dins del <script setup> de Exercici.vue
-
-// ...
 const route = useRoute()
-// ...
 
-// Dades de la Càmera i Vídeo
-// AQUESTA LÍNIA ÉS CLAU
-const videoUrl = ref((route.query.video as string) || '/videos/Download.mp4')
+const videoUrl = ref((route.query.video as string) || '/videos/Download.mp4') 
 
-// ...
 const router = useRouter()
-const socket = inject('socket') as Socket
+const socket = inject('socket') as Socket 
 
-// Dades de la Ruta
-const exerciseName = (route.query.name as string) || 'Exercici'
-const sessionId = ref((route.query.sessionId as string) || null)
-const isGroupSession = computed(() => !!sessionId.value)
+const exerciseName = (route.query.name as string) || 'Exercici' 
+const sessionId = ref((route.query.sessionId as string) || null) 
+const isGroupSession = computed(() => !!sessionId.value) 
 
-// Dades de la Sala
-const roomState = ref<Room | null>(null)
-const myNickname = ref(localStorage.getItem('userName') || 'Tu')
+const roomState = ref<Room | null>(null) 
+const myNickname = ref(localStorage.getItem('userName') || 'Tu') 
 
-// Dades de la Càmera i Vídeo
-const videoStream = ref<MediaStream | null>(null)
-const cameraElement = ref<HTMLVideoElement | null>(null)
-const cameraError = ref(false)
+const videoStream = ref<MediaStream | null>(null) 
+const cameraElement = ref<HTMLVideoElement | null>(null) 
+const cameraError = ref(false) 
 
-// Estadístiques Locals
-const exerciseCount = ref(0)
-const sessionTime = ref(0)
-const caloriesBurned = ref(0)
-const isTimerRunning = ref(false)
-let intervalId: number | null = null
+const exerciseCount = ref(0) 
+const sessionTime = ref(0) 
+const caloriesBurned = ref(0) 
+const isTimerRunning = ref(false) 
+let intervalId: number | null = null 
 
-// --- LÒGICA DE SOCKETS (MODIFICADA) ---
+const repetitionCount = ref(0) 
 
-const setupSocketListeners = () => {
-  // 1. Escuchamos actualizaciones de la sala
-  socket.on('session:roomUpdate', (room: Room) => {
-    roomState.value = room
+const setupSocketListeners = () => { 
+  socket.on('session:roomUpdate', (room: Room) => { 
+    roomState.value = room 
   })
 
-  // 2. Escuchamos errores
-  socket.on('session:error', (message: string) => {
-    // Usamos un div custom en vez de alert, pero para el ejemplo sirve
-    alert(`Error de sessió: ${message}. Tornant al lobby...`)
-    // goBack() //
+  socket.on('session:error', (message: string) => { 
+    alert(`Error de sessió: ${message}. Tornant al lobby...`) 
   })
 
-  // 3. ¡IMPORTANTE! Pedimos el estado actual de la sala
-  // El servidor debería tener un listener para 'session:getState'
-  // que responda con un 'session:roomUpdate' solo a este cliente.
-  // Asumimos que el servidor ya tiene al cliente en la sala correcta
-  // (esto debería haberse hecho en la vista de Lobby)
-  socket.emit('session:getState', sessionId.value)
+  socket.emit('session:getState', sessionId.value) 
 }
 
-onMounted(async () => {
-  // 1. Iniciar Càmera (sin cambios)
+onMounted(async () => { 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    videoStream.value = stream
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }) 
+    videoStream.value = stream 
     if (cameraElement.value) {
-      cameraElement.value.srcObject = stream
+      cameraElement.value.srcObject = stream 
     }
-    cameraError.value = false
+    cameraError.value = false 
   } catch (error) {
-    console.error('Error al accedir a la càmera:', error)
-    cameraError.value = true
+    console.error('Error al accedir a la càmera:', error) 
+    cameraError.value = true 
   }
 
-  // 2. Lògica de Grup (MODIFICADA)
-  if (isGroupSession.value) {
-    if (socket.connected) {
-      // Si ya estamos conectados, configuramos listeners
-      console.log('Socket ya conectado. Configurando listeners.')
-      setupSocketListeners()
+  if (isGroupSession.value) { 
+    if (socket.connected) { 
+      console.log('Socket ya conectado. Configurando listeners.') 
+      setupSocketListeners() 
     } else {
-      // Si no, esperamos al evento 'connect'
-      console.log('Socket no conectado. Esperando conexión...')
-      socket.on('connect', () => {
-        console.log('Socket conectado! Configurando listeners.')
-        setupSocketListeners()
+      console.log('Socket no conectado. Esperando conexión...') 
+      socket.on('connect', () => { 
+        console.log('Socket conectado! Configurando listeners.') 
+        setupSocketListeners() 
       })
     }
   }
 })
 
-onUnmounted(() => {
-  // 1. Aturar Càmera (sin cambios)
-  videoStream.value?.getTracks().forEach(track => track.stop())
-  if (intervalId !== null) clearInterval(intervalId)
+onUnmounted(() => { 
+  videoStream.value?.getTracks().forEach(track => track.stop()) 
+  if (intervalId !== null) clearInterval(intervalId) 
 
-  // 2. Netejar Sockets (sin cambios)
-  if (isGroupSession.value) {
-    socket.off('session:roomUpdate')
-    socket.off('session:error')
-    socket.off('connect') // Limpiamos el listener de 'connect' por si acaso
+  if (isGroupSession.value) { 
+    socket.off('session:roomUpdate') 
+    socket.off('session:error') 
+    socket.off('connect') 
   }
 })
 
-// --- FUNCIONS (sin cambios) ---
-
-const formatTime = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = seconds % 60
-  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':')
+const formatTime = (seconds: number): string => { 
+  const hours = Math.floor(seconds / 3600) 
+  const minutes = Math.floor((seconds % 3600) / 60) 
+  const secs = seconds % 60 
+  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':') 
 }
 
-const broadcastStats = () => {
-  if (isGroupSession.value && sessionId.value && socket.connected) { // Añadido check de socket.connected
-    socket.emit('exercise:updateStats', {
-      roomId: sessionId.value,
-      reps: exerciseCount.value,
-      cals: caloriesBurned.value,
-      time: sessionTime.value
+const broadcastStats = () => { 
+  if (isGroupSession.value && sessionId.value && socket.connected) { 
+    socket.emit('exercise:updateStats', { 
+      roomId: sessionId.value, 
+      reps: exerciseCount.value, 
+      cals: caloriesBurned.value, 
+      time: sessionTime.value 
     })
   }
 }
 
-const incrementExercises = () => {
-  exerciseCount.value++
-  caloriesBurned.value += Math.floor(Math.random() * 3) + 2
-  broadcastStats()
+const handleSquatRep = () => { 
+  repetitionCount.value++ 
+  caloriesBurned.value += Math.floor(Math.random() * 2) + 1 
+  broadcastStats() 
 }
 
-const startTimer = () => {
-  if (isTimerRunning.value) return
-  isTimerRunning.value = true
-  intervalId = window.setInterval(() => {
-    sessionTime.value++
-    if (sessionTime.value % 10 === 0) {
-      caloriesBurned.value += Math.floor(Math.random() * 5) + 1
+const incrementExercises = () => { 
+  exerciseCount.value++ 
+  caloriesBurned.value += Math.floor(Math.random() * 3) + 2 
+  broadcastStats() 
+}
+
+const startTimer = () => { 
+  if (isTimerRunning.value) return 
+  isTimerRunning.value = true 
+  intervalId = window.setInterval(() => { 
+    sessionTime.value++ 
+    if (sessionTime.value % 10 === 0) { 
+      caloriesBurned.value += Math.floor(Math.random() * 5) + 1 
     }
-    broadcastStats()
+    broadcastStats() 
   }, 1000)
 }
 
-const pauseTimer = () => {
-  if (!isTimerRunning.value) return
-  isTimerRunning.value = false
-  if (intervalId !== null) {
-    clearInterval(intervalId)
-    intervalId = null
+const pauseTimer = () => { 
+  if (!isTimerRunning.value) return 
+  isTimerRunning.value = false 
+  if (intervalId !== null) { 
+    clearInterval(intervalId) 
+    intervalId = null 
   }
-  broadcastStats()
+  broadcastStats() 
 }
 
-const resetStats = () => {
-  pauseTimer()
-  exerciseCount.value = 0
-  sessionTime.value = 0
-  caloriesBurned.value = 0
-  broadcastStats()
+const resetStats = () => { 
+  pauseTimer() 
+  exerciseCount.value = 0 
+  repetitionCount.value = 0 
+  sessionTime.value = 0 
+  caloriesBurned.value = 0 
+  broadcastStats() 
 }
 
-const goBack = () => {
-  if (isGroupSession.value) {
-    router.push({
+const goBack = () => { 
+  if (isGroupSession.value) { 
+    router.push({ 
       name: 'SessioLobby',
       params: { exerciseId: route.params.id },
       query: { name: exerciseName }
     })
   } else {
-    router.push({ name: 'BuscadorExercici' })
+    router.push({ name: 'BuscadorExercici' }) 
   }
 }
 
-const finalitzarSessio = () => {
-  pauseTimer()
-  router.push({
+const finalitzarSessio = () => { 
+  pauseTimer() 
+  router.push({ 
     name: 'ResultatsExercici',
     query: {
-      tecnica: (Math.random() * 100).toFixed(1),
-      reps: exerciseCount.value
+      tecnica: (Math.random() * 100).toFixed(1), 
+      reps: repetitionCount.value 
     }
   })
 }
-const isFullScreen = ref(false)
+const isFullScreen = ref(false) 
 
-const toggleFullScreen = () => {
-  isFullScreen.value = !isFullScreen.value
+const toggleFullScreen = () => { 
+  isFullScreen.value = !isFullScreen.value 
 }
 
 </script>
@@ -258,36 +236,68 @@ const toggleFullScreen = () => {
               </v-card-title>
 
               <v-card-text class="pa-0 camera-container">
-                <pose-squad />
-                <div v-if="isFullScreen" class="fullscreen-overlay">
+                
+                <pose-squad 
+                  v-if="!isFullScreen" 
+                  @squat-completed="handleSquatRep" 
+                />
 
-                  <div class="overlay-stat-top">
+                <div v-if="isFullScreen" class="fullscreen-grid-overlay">
+
+                  <div class="grid-item rect-left d-flex flex-column align-center justify-center">
                     <div class="overlay-stat-item text-center">
-                      <div class="overlay-value">{{ formatTime(sessionTime) }}</div>
-                      <div class="overlay-label">Temps</div>
+                      <div class="overlay-value">{{ repetitionCount }}</div>
+                      <div class="overlay-label">Repeticiones</div>
                     </div>
                   </div>
 
-                  <div class="overlay-stats-left">
+                  <div class="grid-item camera-middle">
+                    <pose-squad 
+                      v-if="isFullScreen" 
+                      @squat-completed="handleSquatRep" 
+                    />
+                    <div class="overlay-stat-top">
+                      <div class="overlay-stat-item text-center">
+                        <div class="overlay-value">{{ formatTime(sessionTime) }}</div>
+                        <div class="overlay-label">Temps</div>
+                      </div>
+                    </div>
+                  </div>
 
-                    <div class="overlay-stat-item mb-6">
+                  <div class="grid-item rect-right">
+                    <h4 class="text-h6">Rectángulo Derecho</h4>
+                    <p>Aquí puedes poner más estadísticas.</p>
+                  </div>
+
+                  <div class="grid-item box-bottom d-flex align-center">
+                    
+                    <div class="overlay-stat-item text-center d-flex flex-column align-center">
                       <div class="overlay-value">{{ exerciseCount }}</div>
                       <div class="overlay-label">Series</div>
+                      <v-btn 
+                        color="#FF6600" 
+                        variant="flat" 
+                        size="small" 
+                        @click="incrementExercises" 
+                        class="mt-2" 
+                        style="pointer-events: all; color: white !important; min-width: 40px;">
+                        <v-icon>mdi-plus</v-icon>
+                      </v-btn>
                     </div>
 
-                    <div class="overlay-stat-item">
+                    <div class="overlay-stat-item text-center">
                       <div class="overlay-value">{{ caloriesBurned }}</div>
                       <div class="overlay-label">Calories</div>
                     </div>
-
                   </div>
+
                 </div>
+                
               </v-card-text>
             </v-card>
           </v-col>
         </v-row>
         
-        <!-- Esta sección ahora debería funcionar para todos -->
         <v-row v-if="isGroupSession && roomState" class="mt-4">
           <v-col cols="12">
             <v-card class="pa-4" elevation="3">
@@ -302,7 +312,7 @@ const toggleFullScreen = () => {
                       {{ player.nickname }} {{ player.nickname === myNickname ? '(Tu)' : '' }}
                     </v-card-title>
                     <v-card-text>
-                      <div><strong>Reps:</strong> {{ player.reps }}</div>
+                      <div><strong>Sèries:</strong> {{ player.reps }}</div>
                       <div><strong>Temps:</strong> {{ formatTime(player.time) }}</div>
                       <div><strong>Cals:</strong> {{ player.cals }}</div>
                     </v-card-text>
@@ -361,7 +371,8 @@ const toggleFullScreen = () => {
               </v-card-text>
             </v-card>
           </v-col>
-        </v-row>
+
+          </v-row>
 
         <v-row class="mt-6">
           <v-col cols="12" class="text-center">
@@ -397,6 +408,7 @@ const toggleFullScreen = () => {
   position: relative;
   min-height: 415px;
   background: #000;
+  height: 100%;
 }
 
 .camera-error {
@@ -452,7 +464,6 @@ const toggleFullScreen = () => {
   color: white !important;
 }
 
-/* Estils per a les targetes d'estadístiques de grup (del teu original) */
 .v-card-text div {
   line-height: 1.6;
 }
@@ -460,7 +471,6 @@ const toggleFullScreen = () => {
 .camera-fullscreen {
   position: fixed;
   top: 64px;
-  /* debajo del app bar */
   left: 0;
   right: 0;
   bottom: 0;
@@ -476,74 +486,101 @@ const toggleFullScreen = () => {
   background: #000;
 }
 
-/* ... (tots els teus estils existents) ... */
-
-/* CANVI IMPORTANT: 
-  Afegeix 'position: relative' aquí perquè l'overlay 
-  es posicioni dins del contenidor de la càmera.
-*/
-.camera-container {
-  position: relative;
-  min-height: 360px;
+.fullscreen-grid-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.8fr 1fr;
+  /* MODIFICADO: Fila de arriba (1fr) y fila de abajo (1fr) ocupan el 50% cada una */
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "left   middle   right"
+    "bottom bottom   bottom";
+  color: white;
+  pointer-events: none;
+  gap: 10px;
+  padding: 0 10px;
   background: #000;
 }
 
-/* --- ESTILS PER AL NOU HUD DE PANTALLA COMPLETA --- */
+.grid-item {
+  pointer-events: all;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 0;
+}
 
-.fullscreen-overlay {
-  /* Ocupa tot l'espai del contenidor pare ('camera-container') */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.rect-left {
+  grid-area: left;
+  border: 1px dashed #00ff88;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 
-  /* Important: No bloqueja els clics (p.ex. el botó d'sortir) */
-  pointer-events: none;
+.camera-middle {
+  grid-area: middle;
+  position: relative;
+  background: #000;
+  padding: 0;
+  border: 2px solid red;
+  overflow: hidden;
+}
 
-  /* Color blanc per a tot el text */
-  color: white;
+.rect-right {
+  grid-area: right;
+  border: 1px dashed #00aaff;
+  overflow: hidden;
+}
+
+.box-bottom {
+  grid-area: bottom;
+  border: 1px dashed #ffaa00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  padding: 4px 16px;
 }
 
 .overlay-stat-top {
   position: absolute;
-  top: 20px;
-  /* Marge superior */
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  /* Centrat horitzontal */
   pointer-events: all;
-  /* Permet que els elements interns rebin events si cal */
+  width: 100%;
 }
 
-.overlay-stats-left {
-  position: absolute;
-  left: 30px;
-  /* Marge esquerre */
-  top: 50%;
-  transform: translateY(-50%);
-  /* Centrat vertical */
-  pointer-events: all;
-}
-
-/* Estil per a cada ítem (p.ex. "10 Exercicis") */
 .overlay-stat-item {
-  /* Aquesta ombra fa que el text sigui llegible sobre qualsevol fons.
-     Això crea l'efecte "opacitat" que buscaves, sense un fons sòlid. */
   text-shadow: 0px 0px 10px rgba(0, 0, 0, 1);
 }
 
 .overlay-value {
   font-size: 3rem;
-  /* Mida gran pel número */
   font-weight: bold;
   line-height: 1.1;
 }
 
 .overlay-label {
   font-size: 1.1rem;
-  /* Mida més petita per l'etiqueta */
   font-weight: 500;
   text-transform: uppercase;
+}
+
+.box-bottom .overlay-value {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.box-bottom .overlay-label {
+  font-size: 0.9rem;
+}
+
+.box-bottom .v-btn {
+  margin-top: 4px !important;
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup>
-import { ref, reactive, watch, onMounted, onBeforeUnmount } from 'vue'
+// 1. S'afegeix 'defineEmits'
+import { ref, reactive, watch, onMounted, onBeforeUnmount, defineEmits } from 'vue'
 import * as tf from '@tensorflow/tfjs-core'
 import '@tensorflow/tfjs-backend-webgl'
 import * as poseDetection from '@tensorflow-models/pose-detection'
@@ -14,6 +15,9 @@ const videoEl = ref(null)
 const canvasRef = ref(null)
 let detector = null
 let rafId = 0
+
+// 2. Es defineix l'event que s'emetrà al pare
+const emit = defineEmits(['squat-completed'])
 
 const sourceMode = ref('camera')
 const fileUrl = ref(null)
@@ -72,7 +76,10 @@ function drawSkeleton(ctx, keypoints) {
 /* ------------------------------------------
    CONTADOR DE SENTADILLAS (MEJORADO)
 ------------------------------------------ */
-const squatCount = ref(0)
+
+// 3. S'elimina 'squatCount' d'aquí
+// const squatCount = ref(0) 
+
 let state = 'up'
 let smoothedAngle = null
 let _fpsEma = 0
@@ -177,7 +184,9 @@ async function loop() {
   }
 
   if (filteredAngle > upThreshold && state === 'down') {
-    squatCount.value++
+    // 4. Es canvia el comptador intern per l'emissió de l'event
+    // squatCount.value++
+    emit('squat-completed')
     state = 'up'
   }
 
@@ -210,10 +219,8 @@ watch(selectedId, id => { if (id && sourceMode.value === 'camera') startCamera(i
     <div class="stage">
       <video ref="videoEl" playsinline muted autoplay class="video"></video>
       <canvas ref="canvasRef" class="overlay"></canvas>
-      <div class="counter-panel">
-        <h2>Repeticiones: {{ squatCount }}</h2>
+      
       </div>
-    </div>
 
     <div class="camera-select">
       <select v-model="selectedId">
@@ -253,6 +260,8 @@ watch(selectedId, id => { if (id && sourceMode.value === 'camera') startCamera(i
   pointer-events: none;
 }
 
+/* 6. S'eliminen els estils del panell del comptador */
+/*
 .counter-panel {
   position: absolute;
   top: 10px;
@@ -265,4 +274,5 @@ watch(selectedId, id => { if (id && sourceMode.value === 'camera') startCamera(i
   font-family: monospace;
   font-size: 1.2rem;
 }
+*/
 </style>

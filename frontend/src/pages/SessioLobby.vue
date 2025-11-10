@@ -3,22 +3,23 @@ import { ref, onMounted, onUnmounted, inject, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Socket } from 'socket.io-client'
 
-// --- Tipos de Datos ---
+// --- Tipos de Datos (ACTUALITZATS) ---
 interface Player {
   id: string
   nickname: string
   reps: number
   cals: number
   time: number
+  isReady: boolean // <-- AFEGIT
 }
 interface Room {
-  id: string // Este es el código de 6 dígitos
+  id: string
   exerciseId: string
   exerciseName: string
   hostId: string
   players: Player[]
 }
-// ---------------------
+// ------------------------------------
 
 const props = defineProps<{
   exerciseId: string
@@ -30,16 +31,14 @@ const router = useRouter()
 const socket = inject('socket') as Socket
 
 const exerciseName = ref((route.query.name as string) || 'Sessió')
-// Cargar nombre de localStorage, con un fallback
 const userName = ref(localStorage.getItem('userName') || `Visitant_${Math.floor(Math.random() * 100)}`)
 
 const activeSessions = ref<Room[]>([])
 const joinCode = ref('')
 const loading = ref(false)
-const isPrivate = ref(false) // <-- AFEGIT: Variable per a la sala privada
+const isPrivate = ref(false)
 
 onMounted(() => {
-  // Guardar el nombre de usuario por si no lo tenía
   if (!localStorage.getItem('userName')) {
     localStorage.setItem('userName', userName.value)
   }
@@ -48,30 +47,34 @@ onMounted(() => {
     socket.connect()
   }
 
-  // Pedimos la lista de salas para este ejercicio
   socket.emit('session:requestList', props.exerciseId)
 
-  // Escuchamos la lista actualizada
   socket.on('session:list', (sessions: Room[]) => {
     activeSessions.value = sessions
   })
 
-  // Evento que se dispara DESPUÉS de crear o unirse a una sala
+  // --- MODIFICAT: Ara naveguem a 'SalaEspera' ---
   socket.on('session:joined', (room: Room) => {
     loading.value = false
-    // Navegamos a la página del ejercicio, pasando el ID de la sala
+    
+    // Netejar el listener abans de marxar
+    socket.off('session:list')
+    socket.off('session:joined')
+    socket.off('session:error')
+    
+    // Naveguem a la SALA D'ESPERA
     router.push({
-      name: 'Exercici',
-      params: { id: props.exerciseId },
+      name: 'SalaEspera', // <-- CANVIAT
+      params: { id: props.exerciseId }, // 'id' és l'exerciseId
       query: { 
         name: exerciseName.value,
-        sessionId: room.id, // <-- La clave para el modo multijugador
-        video: route.query.video // <-- AQUESTA LÍNIA ÉS CLAU
+        sessionId: room.id, // <-- L'ID de la sala
+        video: route.query.video // <-- Passem el vídeo
       }
     })
   })
+  // ---------------------------------------------
 
-  // Gestión de errores (ej. sala llena, código incorrecto)
   socket.on('session:error', (message: string) => {
     loading.value = false
     alert(`Error: ${message}`)
@@ -79,56 +82,36 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  // Dejamos de escuchar los eventos específicos de este lobby
+  // Netejar els listeners si l'usuari marxa d'aquesta vista
   socket.off('session:list')
   socket.off('session:joined')
   socket.off('session:error')
-  // No desconectamos el socket, el usuario puede volver al buscador
 })
 
-// 1. Iniciar en modo individual (CORREGIT)
+// 1. Iniciar en modo individual (Sense canvis)
 const startSolo = () => {
   router.push({
     name: 'Exercici',
     params: { id: props.exerciseId },
     query: { 
       name: exerciseName.value,
-      video: route.query.video // <-- AQUESTA LÍNIA ÉS CLAU
+      video: route.query.video
     }
   })
 }
 
-// ...
-onMounted(() => {
-  // ...
-  // Evento que se dispara DESPUÉS de crear o unirse (COMPROVA AIXÒ)
-  socket.on('session:joined', (room: Room) => {
-    loading.value = false
-    router.push({
-      name: 'Exercici',
-      params: { id: props.exerciseId },
-      query: { 
-        name: exerciseName.value,
-        sessionId: room.id,
-        video: route.query.video // <-- AQUESTA LÍNIA TAMBÉ ÉS CLAU
-      }
-    })
-  })
-  // ...
-})
-
-// 2. Crear una nova sala de grup (MODIFICAT)
+// 2. Crear una nova sala de grup (Sense canvis de lògica)
 const createGroupSession = () => {
   loading.value = true
   socket.emit('session:create', {
     exerciseId: props.exerciseId,
     exerciseName: exerciseName.value,
     hostName: userName.value,
-    isPrivate: isPrivate.value // <-- AFEGIT: Enviem l'estat privat
+    isPrivate: isPrivate.value
   })
 }
 
-// 3. Unirse a una sala con un código
+// 3. Unirse a una sala con un código (Sense canvis de lògica)
 const joinByCode = () => {
   if (joinCode.value.trim().length === 6) {
     loading.value = true
@@ -141,7 +124,7 @@ const joinByCode = () => {
   }
 }
 
-// 4. Unirse a una sala pública desde la lista
+// 4. Unirse a una sala pública desde la lista (Sense canvis de lògica)
 const joinPublicSession = (roomId: string) => {
     loading.value = true
     socket.emit('session:join', {
@@ -155,7 +138,6 @@ const goBack = () => {
   router.push({ name: 'BuscadorExercici' })
 }
 
-// Para deshabilitar botones mientras se carga
 const canInteract = computed(() => !loading.value)
 
 </script>

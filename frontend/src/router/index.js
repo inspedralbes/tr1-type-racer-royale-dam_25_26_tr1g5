@@ -4,16 +4,16 @@ import Index from '@/pages/index.vue'
 const routes = [
   { 
     path: '/', 
-    name: 'Home', // Renombrado de 'index' a 'Home'
+    name: 'Home',
     component: Index 
   },
   { 
-    path: '/cercador', // Ruta corregida
+    path: '/cercador',
     name: 'BuscadorExercici', 
     component: () => import('@/pages/BuscadorExercici.vue') 
   },
   { 
-    path: '/exercici/:id', // <-- CAMBIADO: necesita un ID
+    path: '/exercici/:id',
     name: 'Exercici', 
     component: () => import('@/pages/Exercici.vue') 
   },
@@ -22,12 +22,20 @@ const routes = [
     name: 'ResultatsExercici', 
     component: () => import('@/pages/ResultatsExercici.vue') 
   },
-  // --- RUTA NUEVA ---
   {
     path: '/sessio/:exerciseId', // Ruta para el lobby de una sesión
     name: 'SessioLobby',
     component: () => import('@/pages/SessioLobby.vue'),
     props: true // Esto pasa 'exerciseId' como prop al componente
+  }, // <-- FALTAVA AQUESTA COMA
+  
+  // --- RUTA DE SALA D'ESPERA AFEGIDA ---
+  {
+    name: 'SalaEspera',
+    path: '/exercici/:id/espera', // :id és l'exerciseId
+    // He canviat la ruta per coincidir amb la teva estructura de '@/pages/'
+    component: () => import('@/pages/SalaEspera.vue'), 
+    props: true 
   }
 ]
 
