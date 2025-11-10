@@ -286,8 +286,7 @@ const toggleFullScreen = () => {
             </v-card>
           </v-col>
         </v-row>
-
-
+        
         <!-- Esta sección ahora debería funcionar para todos -->
         <v-row v-if="isGroupSession && roomState" class="mt-4">
           <v-col cols="12">
@@ -313,7 +312,6 @@ const toggleFullScreen = () => {
             </v-card>
           </v-col>
         </v-row>
-
 
         <v-row class="mt-4">
           
@@ -342,6 +340,7 @@ const toggleFullScreen = () => {
               </v-card-text>
             </v-card>
           </v-col>
+
           <v-col cols="6" sm="6" md="4">
             <v-card class="stat-card" elevation="3">
               <v-card-text class="text-center pa-6">

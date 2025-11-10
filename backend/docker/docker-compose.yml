@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:8.0.36          
+    container_name: fitcam-mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=caching_sha2_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fitcam
+      MYSQL_USER: fitcam
+      MYSQL_PASSWORD: fitcampwd
+      TZ: Europe/Madrid
+    ports:
+      - "3306:3306"              
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # ping sense credencials (més tolerant en arrencada)
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 90s
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: fitcam-pma
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      TZ: Europe/Madrid
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
