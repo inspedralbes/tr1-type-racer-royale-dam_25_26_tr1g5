@@ -194,7 +194,7 @@ const canInteract = computed(() => !loading.value)
                 :disabled="!canInteract"
               >
                 <v-icon left>mdi-account</v-icon>
-                Crear sala individual
+                Entrenar en solitari
               </v-btn>
               
               <v-divider class="my-4"></v-divider>
@@ -215,7 +215,7 @@ const canInteract = computed(() => !loading.value)
                 :disabled="!canInteract"
               >
                 <v-icon left>mdi-account-group</v-icon>
-                Crear sala en grup
+                Entrenar en grup
               </v-btn>
               </v-card>
 
@@ -244,7 +244,7 @@ const canInteract = computed(() => !loading.value)
 
           <v-col cols="12" md="6">
             <v-card class="pa-6" elevation="3" min-height="100%">
-              <h2 class="text-h5 font-weight-bold mb-6">Sessions Públiques Actives</h2>
+              <h2 class="text-h5 font-weight-bold mb-6">Entrenaments Públics Actius</h2>
               
               <v-list v-if="activeSessions.length > 0" lines="two">
                 <v-list-item
@@ -271,7 +271,7 @@ const canInteract = computed(() => !loading.value)
 
               <div v-else class="text-center text-grey pa-4 d-flex flex-column justify-center align-center" style="height: 100%;">
                 <v-icon size="64" class="mb-4">mdi-sleep</v-icon>
-                <p class="text-h6">No hi ha sessions de grup.</p>
+                <p class="text-h6">No hi ha entrenaments de grup.</p>
                 <p>Sigues el primer en crear-ne una!</p>
               </div>
             </v-card>

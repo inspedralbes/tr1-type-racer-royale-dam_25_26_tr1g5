@@ -272,7 +272,7 @@ const toggleFullScreen = () => {
 
                     <div class="overlay-stat-item mb-6">
                       <div class="overlay-value">{{ exerciseCount }}</div>
-                      <div class="overlay-label">Exercicis</div>
+                      <div class="overlay-label">Series</div>
                     </div>
 
                     <div class="overlay-stat-item">
@@ -316,27 +316,7 @@ const toggleFullScreen = () => {
 
 
         <v-row class="mt-4">
-          <v-col cols="6" sm="6" md="4">
-            <v-card class="stat-card" elevation="3">
-              <v-card-text class="text-center pa-6">
-                <div class="stat-icon mb-3">
-                  <v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon>
-                </div>
-                <div class="stat-value text-h5 font-weight-bold mb-2">
-                  {{ exerciseCount }}
-                </div>
-                <div class="stat-label text-body-1 mb-4">
-                  Series Completades
-                </div>
-                <v-btn color="#FF6600" variant="flat" block class="py-2 text-body-2" style="font-size: 0.8rem;"
-                  @click="incrementExercises">
-                  <v-icon class="text-body-">mdi-plus</v-icon>
-                  Series
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
+          
           <v-col cols="6" sm="6" md="4">
             <v-card class="stat-card" elevation="3">
               <v-card-text class="text-center pa-6">
@@ -362,22 +342,22 @@ const toggleFullScreen = () => {
               </v-card-text>
             </v-card>
           </v-col>
-
-          <v-col cols="6" sm="12" md="4">
+          <v-col cols="6" sm="6" md="4">
             <v-card class="stat-card" elevation="3">
               <v-card-text class="text-center pa-6">
                 <div class="stat-icon mb-3">
-                  <v-icon size="32" color="#FF6600">mdi-fire</v-icon>
+                  <v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon>
                 </div>
                 <div class="stat-value text-h5 font-weight-bold mb-2">
-                  {{ caloriesBurned }}
+                  {{ exerciseCount }}
                 </div>
                 <div class="stat-label text-body-1 mb-4">
-                  Calories Cremades
+                  Series Completades
                 </div>
-                <v-btn color="error" variant="outlined" block size="small" @click="resetStats">
-                  <v-icon class="me-2">mdi-refresh</v-icon>
-                  Reiniciar
+                <v-btn color="#FF6600" variant="flat" block class="py-2 text-body-2" style="font-size: 0.8rem;"
+                  @click="incrementExercises">
+                  <v-icon class="text-body-">mdi-plus</v-icon>
+                  Series
                 </v-btn>
               </v-card-text>
             </v-card>
@@ -408,7 +388,7 @@ const toggleFullScreen = () => {
 .video-player,
 .camera-player {
   width: 100%;
-  height: 360px;
+  height: 415px;
   object-fit: contain;
   background: #000;
   display: block;
@@ -416,7 +396,7 @@ const toggleFullScreen = () => {
 
 .camera-container {
   position: relative;
-  min-height: 360px;
+  min-height: 415px;
   background: #000;
 }
 
@@ -425,7 +405,7 @@ const toggleFullScreen = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 360px;
+  height: 415px;
   color: #999;
 }
 

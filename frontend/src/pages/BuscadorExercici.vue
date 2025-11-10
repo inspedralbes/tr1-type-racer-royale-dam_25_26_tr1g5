@@ -297,7 +297,7 @@ const login = () => {
           </v-btn>
           <v-btn color="#FF6600" variant="flat" @click="confirmGoToLobby">
             <v-icon start>mdi-account-group</v-icon>
-            Crear sala
+            Comemçar exercici
           </v-btn>
         </v-card-actions>
       </v-card>
