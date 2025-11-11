@@ -146,6 +146,14 @@ const pauseTimer = () => {
   broadcastStats() 
 }
 
+const toggleTimer = () => {
+  if (isTimerRunning.value) {
+    pauseTimer()
+  } else {
+    startTimer()
+  }
+}
+
 const resetStats = () => { 
   pauseTimer() 
   exerciseCount.value = 0 
@@ -177,10 +185,16 @@ const finalitzarSessio = () => {
     }
   })
 }
-const isFullScreen = ref(false) 
+
+const isFullScreen = ref(false)
+const isVideoFullScreen = ref(false) 
 
 const toggleFullScreen = () => { 
   isFullScreen.value = !isFullScreen.value 
+}
+
+const toggleVideoFullScreen = () => {
+  isVideoFullScreen.value = !isVideoFullScreen.value
 }
 
 </script>
@@ -188,11 +202,6 @@ const toggleFullScreen = () => {
 <template>
   <v-app>
     <v-app-bar color="#FF6600" elevation="3">
-      <a href="http://localhost:3000">
-          <div style="height: 128px; width: 128px;">
-            <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
-          </div>
-        </a>
       <v-container class="d-flex align-center pa-0">
         <v-btn icon @click="goBack" class="me-2">
           <v-icon>mdi-arrow-left</v-icon>
@@ -211,33 +220,40 @@ const toggleFullScreen = () => {
     <v-main>
       <v-container class="py-3" fluid>
         <v-row>
-          <v-col v-if="!isFullScreen" cols="6" md="6">
-            <v-card class="video-card" elevation="3">
-              <v-card-title class="text-h6 bg-grey-darken-2 text-white d-flex justify-space-between align-center">
-                <div>
-                  <v-icon class="me-2">mdi-play-circle</v-icon>
-                  Video de demostració
-                </div>
-                <v-btn icon variant="text" style="visibility: hidden; pointer-events: none;">
-                  <v-icon>mdi-fullscreen</v-icon>
-                </v-btn>
+          <v-col 
+            v-if="!isFullScreen" 
+            :cols="isVideoFullScreen ? 12 : 6" 
+            :md="isVideoFullScreen ? 12 : 6"
+          >
+            <v-card 
+              :class="isVideoFullScreen ? 'fullscreen-card' : 'video-card'" 
+              elevation="3"
+            >
+              <v-card-title class="text-h6 bg-grey-darken-2 text-white d-flex align-center justify-center justify-sm-start">
+                <v-icon class="me-sm-2">mdi-play-circle</v-icon>
+                <span class="d-none d-sm-inline">Video de demostració</span>
               </v-card-title>
-              <v-card-text class="pa-0">
+              
+              <v-card-text class="pa-0 video-player-container">
                 <v-img :src="videoUrl" class="video-player" />
+                <v-btn icon variant="text" class="fullscreen-btn" @click="toggleVideoFullScreen">
+                  <v-icon>
+                    {{ isVideoFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}
+                  </v-icon>
+                </v-btn>
               </v-card-text>
             </v-card>
           </v-col>
 
-          <v-col :cols="isFullScreen ? 12 : 6" :md="isFullScreen ? 12 : 6">
-            <v-card :class="isFullScreen ? 'camera-fullscreen' : 'camera-card'" elevation="1">
-              <v-card-title class="text-h6 bg-grey-darken-3 text-white d-flex justify-space-between align-center">
-                <div>
-                  <v-icon class="me-5">mdi-camera</v-icon>
-                  La teva càmera
-                </div>
-                <v-btn icon variant="text" @click="toggleFullScreen">
-                  <v-icon>{{ isFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
-                </v-btn>
+          <v-col 
+            v-if="!isVideoFullScreen" 
+            :cols="isFullScreen ? 12 : 6" 
+            :md="isFullScreen ? 12 : 6"
+          >
+            <v-card :class="isFullScreen ? 'fullscreen-card' : 'camera-card'" elevation="1">
+              <v-card-title class="text-h6 bg-grey-darken-3 text-white d-flex align-center justify-center justify-sm-start">
+                <v-icon class="me-sm-5">mdi-camera</v-icon>
+                <span class="d-none d-sm-inline">La teva càmera</span>
               </v-card-title>
 
               <v-card-text class="pa-0 camera-container">
@@ -298,6 +314,11 @@ const toggleFullScreen = () => {
 
                 </div>
                 
+                <v-btn icon variant="text" class="fullscreen-btn" @click="toggleFullScreen">
+                  <v-icon>
+                    {{ isFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}
+                  </v-icon>
+                </v-btn>
               </v-card-text>
             </v-card>
           </v-col>
@@ -343,13 +364,14 @@ const toggleFullScreen = () => {
                   Temps de Sessió
                 </div>
                 <div class="timer-buttons">
-                  <v-btn color="success" variant="flat" :disabled="isTimerRunning" @click="startTimer" size="small">
-                    <v-icon class="me-1">mdi-play</v-icon>
-                    Iniciar
-                  </v-btn>
-                  <v-btn color="warning" variant="flat" :disabled="!isTimerRunning" @click="pauseTimer" size="small">
-                    <v-icon class="me-1">mdi-pause</v-icon>
-                    Pausar
+                  <v-btn
+                    :color="isTimerRunning ? 'warning' : 'success'"
+                    variant="flat"
+                    @click="toggleTimer"
+                    size="small"
+                  >
+                    <v-icon class="me-1">{{ isTimerRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+                    {{ isTimerRunning ? 'Pausar' : 'Iniciar' }}
                   </v-btn>
                 </div>
               </v-card-text>
@@ -398,10 +420,22 @@ const toggleFullScreen = () => {
 .camera-card {
   border-radius: 12px;
   overflow: hidden;
+  position: relative; /* Añadido para posicionar el botón de fullscreen */
 }
 
-.video-player,
-.camera-player {
+/* Contenedores de video y cámara para posicionar el botón */
+.video-player-container,
+.camera-container {
+  position: relative;
+  min-height: 415px; /* Asegura un alto mínimo si no hay contenido */
+  background: #000;
+  height: 100%;
+  display: flex; /* Añadido para que el contenido dentro se ajuste bien */
+  align-items: center; /* Centra el contenido verticalmente */
+  justify-content: center; /* Centra el contenido horizontalmente */
+}
+
+.video-player {
   width: 100%;
   height: 415px;
   object-fit: contain;
@@ -409,11 +443,12 @@ const toggleFullScreen = () => {
   display: block;
 }
 
-.camera-container {
-  position: relative;
-  min-height: 415px;
+.camera-player { /* Este estilo parece no usarse directamente en el template actual, pero lo mantengo */
+  width: 100%;
+  height: 415px;
+  object-fit: contain;
   background: #000;
-  height: 100%;
+  display: block;
 }
 
 .camera-error {
@@ -473,30 +508,55 @@ const toggleFullScreen = () => {
   line-height: 1.6;
 }
 
-.camera-fullscreen {
+/* --- ESTILOS PARA FULLSCREEN --- */
+.fullscreen-card {
   position: fixed;
-  top: 64px;
+  top: 0; /* Ajustado para empezar desde arriba */
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 9999;
   background: #000;
   border-radius: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.camera-player-full {
-  width: 100%;
-  height: calc(100vh - 64px);
-  object-fit: contain;
-  background: #000;
+.fullscreen-card .v-card-title {
+  flex-shrink: 0; /* Asegura que el título no se encoja */
 }
+
+.fullscreen-card .v-card-text {
+  flex-grow: 1; /* Permite que el contenido ocupe el espacio restante */
+  height: auto; /* Anula la altura fija si la hubiera */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fullscreen-card .video-player,
+.fullscreen-card .camera-player {
+  width: 100%;
+  height: 100%; /* El video/cámara ocupa todo el espacio disponible */
+  object-fit: contain;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  z-index: 10; /* Asegura que esté por encima del contenido */
+}
+/* -------------------------------- */
 
 .fullscreen-grid-overlay {
   position: absolute;
   inset: 0;
   display: grid;
   grid-template-columns: 1fr 1.8fr 1fr;
-  /* MODIFICADO: Fila de arriba (1fr) y fila de abajo (1fr) ocupan el 50% cada una */
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "left   middle   right"
