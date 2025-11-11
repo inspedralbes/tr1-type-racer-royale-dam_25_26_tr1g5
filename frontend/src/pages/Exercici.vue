@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, inject, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Socket } from 'socket.io-client'
 
-// --- DEFINICIONES (sin cambios) ---
 interface Player {
   id: string
   nickname: string
@@ -19,190 +18,169 @@ interface Room {
   players: Player[]
 }
 
-// ... dins del <script setup> de Exercici.vue
-
-// ...
 const route = useRoute()
-// ...
 
-// Dades de la Càmera i Vídeo
-// AQUESTA LÍNIA ÉS CLAU
 const videoUrl = ref((route.query.video as string) || '/videos/Download.mp4') 
 
-// ...
 const router = useRouter()
-const socket = inject('socket') as Socket
+const socket = inject('socket') as Socket 
 
-// Dades de la Ruta
-const exerciseName = (route.query.name as string) || 'Exercici'
-const sessionId = ref((route.query.sessionId as string) || null)
-const isGroupSession = computed(() => !!sessionId.value)
+const exerciseName = (route.query.name as string) || 'Exercici' 
+const sessionId = ref((route.query.sessionId as string) || null) 
+const isGroupSession = computed(() => !!sessionId.value) 
 
-// Dades de la Sala
-const roomState = ref<Room | null>(null)
-const myNickname = ref(localStorage.getItem('userName') || 'Tu')
+const roomState = ref<Room | null>(null) 
+const myNickname = ref(localStorage.getItem('userName') || 'Tu') 
 
-// Dades de la Càmera i Vídeo
-const videoStream = ref<MediaStream | null>(null)
-const cameraElement = ref<HTMLVideoElement | null>(null)
-const cameraError = ref(false)
+const videoStream = ref<MediaStream | null>(null) 
+const cameraElement = ref<HTMLVideoElement | null>(null) 
+const cameraError = ref(false) 
 
-// Estadístiques Locals
-const exerciseCount = ref(0)
-const sessionTime = ref(0)
-const caloriesBurned = ref(0)
-const isTimerRunning = ref(false)
-let intervalId: number | null = null
+const exerciseCount = ref(0) 
+const sessionTime = ref(0) 
+const caloriesBurned = ref(0) 
+const isTimerRunning = ref(false) 
+let intervalId: number | null = null 
 
-// --- LÒGICA DE SOCKETS (MODIFICADA) ---
+const repetitionCount = ref(0) 
 
-const setupSocketListeners = () => {
-  // 1. Escuchamos actualizaciones de la sala
-  socket.on('session:roomUpdate', (room: Room) => {
-    roomState.value = room
+const setupSocketListeners = () => { 
+  socket.on('session:roomUpdate', (room: Room) => { 
+    roomState.value = room 
   })
 
-  // 2. Escuchamos errores
-  socket.on('session:error', (message: string) => {
-    // Usamos un div custom en vez de alert, pero para el ejemplo sirve
-    alert(`Error de sessió: ${message}. Tornant al lobby...`)
-    // goBack() //
+  socket.on('session:error', (message: string) => { 
+    alert(`Error de sessió: ${message}. Tornant al lobby...`) 
   })
-  
-  // 3. ¡IMPORTANTE! Pedimos el estado actual de la sala
-  // El servidor debería tener un listener para 'session:getState'
-  // que responda con un 'session:roomUpdate' solo a este cliente.
-  // Asumimos que el servidor ya tiene al cliente en la sala correcta
-  // (esto debería haberse hecho en la vista de Lobby)
-  socket.emit('session:getState', sessionId.value)
+
+  socket.emit('session:getState', sessionId.value) 
 }
 
-onMounted(async () => {
-  // 1. Iniciar Càmera (sin cambios)
+onMounted(async () => { 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    videoStream.value = stream
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }) 
+    videoStream.value = stream 
     if (cameraElement.value) {
-      cameraElement.value.srcObject = stream
+      cameraElement.value.srcObject = stream 
     }
-    cameraError.value = false
+    cameraError.value = false 
   } catch (error) {
-    console.error('Error al accedir a la càmera:', error)
-    cameraError.value = true
+    console.error('Error al accedir a la càmera:', error) 
+    cameraError.value = true 
   }
 
-  // 2. Lògica de Grup (MODIFICADA)
-  if (isGroupSession.value) {
-    if (socket.connected) {
-      // Si ya estamos conectados, configuramos listeners
-      console.log('Socket ya conectado. Configurando listeners.')
-      setupSocketListeners()
+  if (isGroupSession.value) { 
+    if (socket.connected) { 
+      console.log('Socket ya conectado. Configurando listeners.') 
+      setupSocketListeners() 
     } else {
-      // Si no, esperamos al evento 'connect'
-      console.log('Socket no conectado. Esperando conexión...')
-      socket.on('connect', () => {
-        console.log('Socket conectado! Configurando listeners.')
-        setupSocketListeners()
+      console.log('Socket no conectado. Esperando conexión...') 
+      socket.on('connect', () => { 
+        console.log('Socket conectado! Configurando listeners.') 
+        setupSocketListeners() 
       })
     }
   }
 })
 
-onUnmounted(() => {
-  // 1. Aturar Càmera (sin cambios)
-  videoStream.value?.getTracks().forEach(track => track.stop())
-  if (intervalId !== null) clearInterval(intervalId)
+onUnmounted(() => { 
+  videoStream.value?.getTracks().forEach(track => track.stop()) 
+  if (intervalId !== null) clearInterval(intervalId) 
 
-  // 2. Netejar Sockets (sin cambios)
-  if (isGroupSession.value) {
-    socket.off('session:roomUpdate')
-    socket.off('session:error')
-    socket.off('connect') // Limpiamos el listener de 'connect' por si acaso
+  if (isGroupSession.value) { 
+    socket.off('session:roomUpdate') 
+    socket.off('session:error') 
+    socket.off('connect') 
   }
 })
 
-// --- FUNCIONS (sin cambios) ---
-
-const formatTime = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = seconds % 60
-  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':')
+const formatTime = (seconds: number): string => { 
+  const hours = Math.floor(seconds / 3600) 
+  const minutes = Math.floor((seconds % 3600) / 60) 
+  const secs = seconds % 60 
+  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':') 
 }
 
-const broadcastStats = () => {
-  if (isGroupSession.value && sessionId.value && socket.connected) { // Añadido check de socket.connected
-    socket.emit('exercise:updateStats', {
-      roomId: sessionId.value,
-      reps: exerciseCount.value,
-      cals: caloriesBurned.value,
-      time: sessionTime.value
+const broadcastStats = () => { 
+  if (isGroupSession.value && sessionId.value && socket.connected) { 
+    socket.emit('exercise:updateStats', { 
+      roomId: sessionId.value, 
+      reps: exerciseCount.value, 
+      cals: caloriesBurned.value, 
+      time: sessionTime.value 
     })
   }
 }
 
-const incrementExercises = () => {
-  exerciseCount.value++
-  caloriesBurned.value += Math.floor(Math.random() * 3) + 2
-  broadcastStats()
+const handleSquatRep = () => { 
+  repetitionCount.value++ 
+  caloriesBurned.value += Math.floor(Math.random() * 2) + 1 
+  broadcastStats() 
 }
 
-const startTimer = () => {
-  if (isTimerRunning.value) return
-  isTimerRunning.value = true
-  intervalId = window.setInterval(() => {
-    sessionTime.value++
-    if (sessionTime.value % 10 === 0) {
-      caloriesBurned.value += Math.floor(Math.random() * 5) + 1
+const incrementExercises = () => { 
+  exerciseCount.value++ 
+  caloriesBurned.value += Math.floor(Math.random() * 3) + 2 
+  broadcastStats() 
+}
+
+const startTimer = () => { 
+  if (isTimerRunning.value) return 
+  isTimerRunning.value = true 
+  intervalId = window.setInterval(() => { 
+    sessionTime.value++ 
+    if (sessionTime.value % 10 === 0) { 
+      caloriesBurned.value += Math.floor(Math.random() * 5) + 1 
     }
-    broadcastStats()
+    broadcastStats() 
   }, 1000)
 }
 
-const pauseTimer = () => {
-  if (!isTimerRunning.value) return
-  isTimerRunning.value = false
-  if (intervalId !== null) {
-    clearInterval(intervalId)
-    intervalId = null
+const pauseTimer = () => { 
+  if (!isTimerRunning.value) return 
+  isTimerRunning.value = false 
+  if (intervalId !== null) { 
+    clearInterval(intervalId) 
+    intervalId = null 
   }
-  broadcastStats()
+  broadcastStats() 
 }
 
-const resetStats = () => {
-  pauseTimer()
-  exerciseCount.value = 0
-  sessionTime.value = 0
-  caloriesBurned.value = 0
-  broadcastStats()
+const resetStats = () => { 
+  pauseTimer() 
+  exerciseCount.value = 0 
+  repetitionCount.value = 0 
+  sessionTime.value = 0 
+  caloriesBurned.value = 0 
+  broadcastStats() 
 }
 
-const goBack = () => {
-  if (isGroupSession.value) {
+const goBack = () => { 
+  if (isGroupSession.value) { 
     router.push({ 
-      name: 'SessioLobby', 
+      name: 'SessioLobby',
       params: { exerciseId: route.params.id },
       query: { name: exerciseName }
     })
   } else {
-    router.push({ name: 'BuscadorExercici' })
+    router.push({ name: 'BuscadorExercici' }) 
   }
 }
 
-const finalitzarSessio = () => {
-  pauseTimer()
-  router.push({
+const finalitzarSessio = () => { 
+  pauseTimer() 
+  router.push({ 
     name: 'ResultatsExercici',
     query: {
-      tecnica: (Math.random() * 100).toFixed(1),
-      reps: exerciseCount.value
+      tecnica: (Math.random() * 100).toFixed(1), 
+      reps: repetitionCount.value 
     }
   })
 }
-const isFullScreen = ref(false)
+const isFullScreen = ref(false) 
 
-const toggleFullScreen = () => {
-  isFullScreen.value = !isFullScreen.value
+const toggleFullScreen = () => { 
+  isFullScreen.value = !isFullScreen.value 
 }
 
 </script>
@@ -227,121 +205,116 @@ const toggleFullScreen = () => {
 
     <v-main>
       <v-container class="py-3" fluid>
-       <v-row>
-      <v-col v-if="!isFullScreen" cols="6" md="6">
-        <v-card class="video-card" elevation="3">
-          <v-card-title
-            class="text-h6 bg-grey-darken-2 text-white d-flex justify-space-between align-center"
-          >
-            <div>
-              <v-icon class="me-2">mdi-play-circle</v-icon>
-              Video de demostració
-            </div>
-            <v-btn
-              icon
-              variant="text"
-              style="visibility: hidden; pointer-events: none;"
-            >
-              <v-icon>mdi-fullscreen</v-icon>
-            </v-btn>
-          </v-card-title>
-          <v-card-text class="pa-0">
-            <v-img :src="videoUrl" class="video-player" />
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col :cols="isFullScreen ? 12 : 6" :md="isFullScreen ? 12 : 6">
-        <v-card
-          :class="isFullScreen ? 'camera-fullscreen' : 'camera-card'"
-          elevation="1"
-        >
-          <v-card-title
-            class="text-h6 bg-grey-darken-3 text-white d-flex justify-space-between align-center"
-          >
-            <div>
-              <v-icon class="me-5">mdi-camera</v-icon>
-              La teva càmera
-            </div>
-            <v-btn icon variant="text" @click="toggleFullScreen">
-              <v-icon>{{ isFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
-            </v-btn>
-          </v-card-title>
-
-          <v-card-text class="pa-0 camera-container">
-            <video
-              v-if="!cameraError"
-              ref="cameraElement"
-              autoplay
-              playsinline
-              :class="[
-                'camera-player',
-                isFullScreen ? 'camera-player-full' : ''
-              ]"
-            />
-            <div v-else class="camera-error">
-              <v-icon size="64" color="error">mdi-camera-off</v-icon>
-              <p class="mt-4">No s'ha pogut accedir a la càmera</p>
-            </div>
-            
-            <div v-if="isFullScreen" class="fullscreen-overlay">
-              
-              <div class="overlay-stat-top">
-                <div class="overlay-stat-item text-center">
-                  <div class="overlay-value">{{ formatTime(sessionTime) }}</div>
-                  <div class="overlay-label">Temps</div>
+        <v-row>
+          <v-col v-if="!isFullScreen" cols="6" md="6">
+            <v-card class="video-card" elevation="3">
+              <v-card-title class="text-h6 bg-grey-darken-2 text-white d-flex justify-space-between align-center">
+                <div>
+                  <v-icon class="me-2">mdi-play-circle</v-icon>
+                  Video de demostració
                 </div>
-              </div>
+                <v-btn icon variant="text" style="visibility: hidden; pointer-events: none;">
+                  <v-icon>mdi-fullscreen</v-icon>
+                </v-btn>
+              </v-card-title>
+              <v-card-text class="pa-0">
+                <v-img :src="videoUrl" class="video-player" />
+              </v-card-text>
+            </v-card>
+          </v-col>
 
-              <div class="overlay-stats-left">
+          <v-col :cols="isFullScreen ? 12 : 6" :md="isFullScreen ? 12 : 6">
+            <v-card :class="isFullScreen ? 'camera-fullscreen' : 'camera-card'" elevation="1">
+              <v-card-title class="text-h6 bg-grey-darken-3 text-white d-flex justify-space-between align-center">
+                <div>
+                  <v-icon class="me-5">mdi-camera</v-icon>
+                  La teva càmera
+                </div>
+                <v-btn icon variant="text" @click="toggleFullScreen">
+                  <v-icon>{{ isFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+                </v-btn>
+              </v-card-title>
+
+              <v-card-text class="pa-0 camera-container">
                 
-                <div class="overlay-stat-item mb-6">
-                  <div class="overlay-value">{{ exerciseCount }}</div>
-                  <div class="overlay-label">Exercicis</div>
-                </div>
+                <pose-squad 
+                  v-if="!isFullScreen" 
+                  @squat-completed="handleSquatRep" 
+                />
 
-                <div class="overlay-stat-item">
-                  <div class="overlay-value">{{ caloriesBurned }}</div>
-                  <div class="overlay-label">Calories</div>
-                </div>
+                <div v-if="isFullScreen" class="fullscreen-grid-overlay">
 
-              </div>
-            </div>
-            </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+  <!-- Cámara -->
+  <div class="grid-item camera-middle d-flex flex-column align-center justify-center">
+    <pose-squad 
+      v-if="isFullScreen" 
+      @squat-completed="handleSquatRep" 
+      style="width: 100%; height: 100%;"
+    />
+    
+    <!-- Repeticiones debajo de la cámara -->
+    <div class="overlay-stat-item text-center mt-2">
+      <div class="overlay-value">{{ repetitionCount }}</div>
+      <div class="overlay-label">Repeticiones</div>
+    </div>
+  </div>
 
+  <!-- Rectángulo derecho más pequeño -->
+  <div class="grid-item rect-right d-flex flex-column justify-start p-2">
+    <h4 class="text-h6">Rectángulo Derecho</h4>
+    <p>Aquí puedes poner más estadísticas.</p>
+  </div>
 
-        <!-- Esta sección ahora debería funcionar para todos -->
+  <!-- Box de abajo con tiempo, series y calorías -->
+  <div class="grid-item box-bottom d-flex justify-around align-center p-2">
+    <div class="overlay-stat-item text-center">
+      <div class="overlay-value">{{ formatTime(sessionTime) }}</div>
+      <div class="overlay-label">Tiempo</div>
+    </div>
+
+    <div class="overlay-stat-item text-center d-flex flex-column align-center">
+      <div class="overlay-value">{{ exerciseCount }}</div>
+      <div class="overlay-label">Series</div>
+      <v-btn 
+        color="#FF6600" 
+        variant="flat" 
+        size="small" 
+        @click="incrementExercises" 
+        class="mt-2" 
+        style="pointer-events: all; color: white !important; min-width: 40px;">
+        <v-icon>mdi-plus</v-icon>
+      </v-btn>
+    </div>
+
+    <div class="overlay-stat-item text-center">
+      <div class="overlay-value">{{ caloriesBurned }}</div>
+      <div class="overlay-label">Calorías</div>
+    </div>
+  </div>
+
+</div>
+
+                
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+        
         <v-row v-if="isGroupSession && roomState" class="mt-4">
           <v-col cols="12">
             <v-card class="pa-4" elevation="3">
               <h3 class="text-h6 font-weight-bold mb-3">Estadístiques del Grup</h3>
               <v-row>
-                <v-col
-                  v-for="player in roomState.players"
-                  :key="player.id"
-                  cols="12"
-                  sm="6"
-                  md="3"
-                >
-                  <v-card
-                    :color="player.nickname === myNickname ? 'orange-lighten-5' : 'grey-lighten-4'"
-                    flat
-                    border
-                  >
+                <v-col v-for="player in roomState.players" :key="player.id" cols="12" sm="6" md="3">
+                  <v-card :color="player.nickname === myNickname ? 'orange-lighten-5' : 'grey-lighten-4'" flat border>
                     <v-card-title class="text-subtitle-1 font-weight-bold">
-                      <v-icon 
-                        :color="roomState.hostId === player.id ? 'amber' : 'grey'"
-                        left
-                      >
+                      <v-icon :color="roomState.hostId === player.id ? 'amber' : 'grey'" left>
                         {{ roomState.hostId === player.id ? 'mdi-crown' : 'mdi-account' }}
                       </v-icon>
                       {{ player.nickname }} {{ player.nickname === myNickname ? '(Tu)' : '' }}
                     </v-card-title>
                     <v-card-text>
-                      <div><strong>Reps:</strong> {{ player.reps }}</div>
+                      <div><strong>Sèries:</strong> {{ player.reps }}</div>
                       <div><strong>Temps:</strong> {{ formatTime(player.time) }}</div>
                       <div><strong>Cals:</strong> {{ player.cals }}</div>
                     </v-card-text>
@@ -352,35 +325,8 @@ const toggleFullScreen = () => {
           </v-col>
         </v-row>
 
-
         <v-row class="mt-4">
-          <v-col cols="6" sm="6" md="4">
-            <v-card class="stat-card" elevation="3">
-              <v-card-text class="text-center pa-6">
-                <div class="stat-icon mb-3">
-                  <v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon>
-                </div>
-                <div class="stat-value text-h5 font-weight-bold mb-2">
-                  {{ exerciseCount }}
-                </div>
-                <div class="stat-label text-body-1 mb-4">
-                  Exercicis Completats
-                </div>
-                <v-btn
-                   color="#FF6600"
-                   variant="flat"
-                    block
-                    class="py-2 text-body-2"
-                    style="font-size: 0.8rem;"
-                    @click="incrementExercises"
-                >
-                  <v-icon class="text-body-">mdi-plus</v-icon>
-                  Afegir exercici
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
+          
           <v-col cols="6" sm="6" md="4">
             <v-card class="stat-card" elevation="3">
               <v-card-text class="text-center pa-6">
@@ -394,23 +340,11 @@ const toggleFullScreen = () => {
                   Temps de Sessió
                 </div>
                 <div class="timer-buttons">
-                  <v-btn
-                    color="success"
-                    variant="flat"
-                    :disabled="isTimerRunning"
-                    @click="startTimer"
-                    size="small"
-                  >
+                  <v-btn color="success" variant="flat" :disabled="isTimerRunning" @click="startTimer" size="small">
                     <v-icon class="me-1">mdi-play</v-icon>
                     Iniciar
                   </v-btn>
-                  <v-btn
-                    color="warning"
-                    variant="flat"
-                    :disabled="!isTimerRunning"
-                    @click="pauseTimer"
-                    size="small"
-                  >
+                  <v-btn color="warning" variant="flat" :disabled="!isTimerRunning" @click="pauseTimer" size="small">
                     <v-icon class="me-1">mdi-pause</v-icon>
                     Pausar
                   </v-btn>
@@ -419,41 +353,32 @@ const toggleFullScreen = () => {
             </v-card>
           </v-col>
 
-          <v-col cols="6" sm="12" md="4">
+          <v-col cols="6" sm="6" md="4">
             <v-card class="stat-card" elevation="3">
               <v-card-text class="text-center pa-6">
                 <div class="stat-icon mb-3">
-                  <v-icon size="32" color="#FF6600">mdi-fire</v-icon>
+                  <v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon>
                 </div>
                 <div class="stat-value text-h5 font-weight-bold mb-2">
-                  {{ caloriesBurned }}
+                  {{ exerciseCount }}
                 </div>
                 <div class="stat-label text-body-1 mb-4">
-                  Calories Cremades
+                  Series Completades
                 </div>
-                <v-btn
-                  color="error"
-                  variant="outlined"
-                  block
-                  size="small"
-                  @click="resetStats"
-                >
-                  <v-icon class="me-2">mdi-refresh</v-icon>
-                  Reiniciar
+                <v-btn color="#FF6600" variant="flat" block class="py-2 text-body-2" style="font-size: 0.8rem;"
+                  @click="incrementExercises">
+                  <v-icon class="text-body-">mdi-plus</v-icon>
+                  Series
                 </v-btn>
               </v-card-text>
             </v-card>
           </v-col>
-        </v-row>
-        
+
+          </v-row>
+
         <v-row class="mt-6">
           <v-col cols="12" class="text-center">
-            <v-btn
-              color="#FF6600"
-              size="large"
-              variant="flat"
-              @click="finalitzarSessio"
-            >
+            <v-btn color="#FF6600" size="large" variant="flat" @click="finalitzarSessio">
               <v-icon class="me-2">mdi-flag-checkered</v-icon>
               Finalitzar Sessió
             </v-btn>
@@ -475,7 +400,7 @@ const toggleFullScreen = () => {
 .video-player,
 .camera-player {
   width: 100%;
-  height: 360px;
+  height: 415px;
   object-fit: contain;
   background: #000;
   display: block;
@@ -483,8 +408,9 @@ const toggleFullScreen = () => {
 
 .camera-container {
   position: relative;
-  min-height: 360px;
+  min-height: 415px;
   background: #000;
+  height: 100%;
 }
 
 .camera-error {
@@ -492,7 +418,7 @@ const toggleFullScreen = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 360px;
+  height: 415px;
   color: #999;
 }
 
@@ -540,13 +466,13 @@ const toggleFullScreen = () => {
   color: white !important;
 }
 
-/* Estils per a les targetes d'estadístiques de grup (del teu original) */
 .v-card-text div {
   line-height: 1.6;
 }
+
 .camera-fullscreen {
   position: fixed;
-  top: 64px; /* debajo del app bar */
+  top: 64px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -561,68 +487,107 @@ const toggleFullScreen = () => {
   object-fit: contain;
   background: #000;
 }
-/* ... (tots els teus estils existents) ... */
 
-/* CANVI IMPORTANT: 
-  Afegeix 'position: relative' aquí perquè l'overlay 
-  es posicioni dins del contenidor de la càmera.
-*/
-.camera-container {
-  position: relative;
-  min-height: 360px;
+.fullscreen-grid-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1.8fr 1fr; 
+
+grid-template-rows: 2fr 1fr;  
+  grid-template-areas:
+    "middle   right"
+    "bottom   bottom";
+  color: white;
+  pointer-events: none;
+  gap: 10px;
+  padding: 10px; /* Añadimos padding para que no se pegue a los bordes */
   background: #000;
+  
+  /* AÑADIDO: Aseguramos que la grid ocupe el 100% del contenedor */
+  height: 100%;
+  box-sizing: border-box; 
 }
 
-/* --- ESTILS PER AL NOU HUD DE PANTALLA COMPLETA --- */
+.grid-item {
+  pointer-events: all;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 0;
+}
 
-.fullscreen-overlay {
-  /* Ocupa tot l'espai del contenidor pare ('camera-container') */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  
-  /* Important: No bloqueja els clics (p.ex. el botó d'sortir) */
-  pointer-events: none;
-  
-  /* Color blanc per a tot el text */
-  color: white;
+.rect-left {
+  grid-area: left;
+  border: 1px dashed #00ff88;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.camera-middle {
+  grid-area: middle;
+  position: relative;
+  background: #000;
+  padding: 0;
+  border: 2px solid red;
+  overflow: hidden;
+}
+
+.rect-right {
+  grid-area: right;
+  border: 1px dashed #00aaff;
+  overflow: hidden;
+}
+
+.box-bottom {
+  grid-area: bottom;
+  border: 1px dashed #ffaa00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  padding: 4px 16px;
+  /* Ahora heredará el padding: 16px de .grid-item, dando más aire. */
 }
 
 .overlay-stat-top {
   position: absolute;
-  top: 20px; /* Marge superior */
+  bottom: 20px;
   left: 50%;
-  transform: translateX(-50%); /* Centrat horitzontal */
-  pointer-events: all; /* Permet que els elements interns rebin events si cal */
-}
-
-.overlay-stats-left {
-  position: absolute;
-  left: 30px; /* Marge esquerre */
-  top: 50%;
-  transform: translateY(-50%); /* Centrat vertical */
+  transform: translateX(-50%);
   pointer-events: all;
+  width: 100%;
 }
 
-/* Estil per a cada ítem (p.ex. "10 Exercicis") */
 .overlay-stat-item {
-  /* Aquesta ombra fa que el text sigui llegible sobre qualsevol fons.
-     Això crea l'efecte "opacitat" que buscaves, sense un fons sòlid. */
   text-shadow: 0px 0px 10px rgba(0, 0, 0, 1);
 }
 
 .overlay-value {
-  font-size: 3rem; /* Mida gran pel número */
+  font-size: 3rem;
   font-weight: bold;
   line-height: 1.1;
 }
 
 .overlay-label {
-  font-size: 1.1rem; /* Mida més petita per l'etiqueta */
+  font-size: 1.1rem;
   font-weight: 500;
   text-transform: uppercase;
 }
-</style>
 
+.box-bottom .overlay-value {
+  font-size: 2.8rem; /* <-- Más grande */
+  line-height: 1.1;
+}
+
+.box-bottom .overlay-label {
+  font-size: 1.1rem; /* <-- Más legible */
+}
+
+.box-bottom .v-btn {
+  margin-top: 4px !important;
+}
+</style>
