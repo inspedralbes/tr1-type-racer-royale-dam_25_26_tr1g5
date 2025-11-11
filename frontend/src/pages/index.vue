@@ -34,14 +34,11 @@ const goToFinder = () => {
       Barra de navegació actualitzada, igual a la de buscadorexercici
     -->
     <v-app-bar app color="#FF6600" flat>
-      <v-img
-        src="/fitcamicon.png"
-        alt="FitCam"
-        contain
-        max-height="128"
-        max-width="128"
-        class="me-2"
-      ></v-img>
+      <a href="http://localhost:3000">
+        <div style="height: 128px; width: 128px;">
+          <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
+        </div>
+      </a>
 
       <v-toolbar-title class="text-white text-h5 font-weight-bold">
         FitCam

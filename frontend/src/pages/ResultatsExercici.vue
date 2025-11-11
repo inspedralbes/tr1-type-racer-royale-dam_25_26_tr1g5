@@ -30,6 +30,11 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
 <template>
   <v-app>
     <v-app-bar color="#FF6600" elevation="0">
+        <a href="http://localhost:3000">
+        <div style="height: 128px; width: 128px;">
+          <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
+        </div>
+      </a>
       <v-container class="d-flex align-center pa-0">
         <v-toolbar-title class="text-h5 font-weight-bold text-white">
           Resultats de la Sessió

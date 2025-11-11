@@ -56,17 +56,17 @@ onMounted(() => {
   // --- MODIFICAT: Ara naveguem a 'SalaEspera' ---
   socket.on('session:joined', (room: Room) => {
     loading.value = false
-    
+
     // Netejar el listener abans de marxar
     socket.off('session:list')
     socket.off('session:joined')
     socket.off('session:error')
-    
+
     // Naveguem a la SALA D'ESPERA
     router.push({
       name: 'SalaEspera', // <-- CANVIAT
       params: { id: props.exerciseId }, // 'id' és l'exerciseId
-      query: { 
+      query: {
         name: exerciseName.value,
         sessionId: room.id, // <-- L'ID de la sala
         video: route.query.video // <-- Passem el vídeo
@@ -93,7 +93,7 @@ const startSolo = () => {
   router.push({
     name: 'Exercici',
     params: { id: props.exerciseId },
-    query: { 
+    query: {
       name: exerciseName.value,
       video: route.query.video
     }
@@ -126,11 +126,11 @@ const joinByCode = () => {
 
 // 4. Unirse a una sala pública desde la lista (Sense canvis de lògica)
 const joinPublicSession = (roomId: string) => {
-    loading.value = true
-    socket.emit('session:join', {
-      roomId: roomId,
-      nickname: userName.value
-    })
+  loading.value = true
+  socket.emit('session:join', {
+    roomId: roomId,
+    nickname: userName.value
+  })
 }
 
 
@@ -148,7 +148,12 @@ const canInteract = computed(() => !loading.value)
       <v-progress-circular indeterminate size="64" color="primary"></v-progress-circular>
     </v-overlay>
 
-    <v-app-bar color="#FF6600" elevation="0">
+    <v-app-bar color="#FF6600" class="d-flex align-center justify-center" flat>
+      <a href="http://localhost:3000">
+        <div style="height: 128px; width: 128px;">
+          <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
+        </div>
+      </a>
       <v-container class="d-flex align-center pa-0">
         <v-btn icon @click="goBack" class="me-2" :disabled="!canInteract">
           <v-icon>mdi-arrow-left</v-icon>
@@ -162,63 +167,33 @@ const canInteract = computed(() => !loading.value)
     <v-main class="bg-grey-lighten-5">
       <v-container class="py-8">
         <v-row justify="center">
-          
+
           <v-col cols="12" md="6">
             <v-card class="pa-6 mb-6" elevation="3">
               <h2 class="text-h5 font-weight-bold mb-6">Modes de Sessió</h2>
-              
-              <v-btn
-                color="primary"
-                block
-                size="x-large"
-                class="mb-4"
-                @click="startSolo"
-                :disabled="!canInteract"
-              >
+
+              <v-btn color="primary" block size="x-large" class="mb-4" @click="startSolo" :disabled="!canInteract">
                 <v-icon left>mdi-account</v-icon>
                 Entrenar en solitari
               </v-btn>
-              
+
               <v-divider class="my-4"></v-divider>
-              
-              <v-switch
-                v-model="isPrivate"
-                label="Fer la sala privada (només amb codi)"
-                color="info"
-                :disabled="!canInteract"
-                class="mb-2"
-              ></v-switch>
-              
-              <v-btn
-                color="success"
-                block
-                size="x-large"
-                @click="createGroupSession"
-                :disabled="!canInteract"
-              >
+
+              <v-switch v-model="isPrivate" label="Fer la sala privada (només amb codi)" color="info"
+                :disabled="!canInteract" class="mb-2"></v-switch>
+
+              <v-btn color="success" block size="x-large" @click="createGroupSession" :disabled="!canInteract">
                 <v-icon left>mdi-account-group</v-icon>
                 Entrenar en grup
               </v-btn>
-              </v-card>
+            </v-card>
 
             <v-card class="pa-6" elevation="3">
               <h3 class="text-h6 font-weight-bold mb-4">Unir-se amb Codi</h3>
-              <v-text-field
-                v-model="joinCode"
-                label="Codi de 6 dígits"
-                variant="outlined"
-                maxlength="6"
-                counter
-                :disabled="!canInteract"
-                @keyup.enter="joinByCode"
-              />
-              <v-btn
-                color="info"
-                block
-                size="large"
-                :disabled="joinCode.length !== 6 || !canInteract"
-                @click="joinByCode"
-              >
+              <v-text-field v-model="joinCode" label="Codi de 6 dígits" variant="outlined" maxlength="6" counter
+                :disabled="!canInteract" @keyup.enter="joinByCode" />
+              <v-btn color="info" block size="large" :disabled="joinCode.length !== 6 || !canInteract"
+                @click="joinByCode">
                 Unir-se a la Sessió
               </v-btn>
             </v-card>
@@ -227,15 +202,10 @@ const canInteract = computed(() => !loading.value)
           <v-col cols="12" md="6">
             <v-card class="pa-6" elevation="3" min-height="100%">
               <h2 class="text-h5 font-weight-bold mb-6">Entrenaments Públics Actius</h2>
-              
+
               <v-list v-if="activeSessions.length > 0" lines="two">
-                <v-list-item
-                  v-for="session in activeSessions"
-                  :key="session.id"
-                  @click="joinPublicSession(session.id)"
-                  class="session-item"
-                  :disabled="!canInteract"
-                >
+                <v-list-item v-for="session in activeSessions" :key="session.id" @click="joinPublicSession(session.id)"
+                  class="session-item" :disabled="!canInteract">
                   <v-list-item-title class="font-weight-bold">
                     Sessió de {{ session.players[0].nickname }}
                   </v-list-item-title>
@@ -251,7 +221,8 @@ const canInteract = computed(() => !loading.value)
                 </v-list-item>
               </v-list>
 
-              <div v-else class="text-center text-grey pa-4 d-flex flex-column justify-center align-center" style="height: 100%;">
+              <div v-else class="text-center text-grey pa-4 d-flex flex-column justify-center align-center"
+                style="height: 100%;">
                 <v-icon size="64" class="mb-4">mdi-sleep</v-icon>
                 <p class="text-h6">No hi ha entrenaments de grup.</p>
                 <p>Sigues el primer en crear-ne una!</p>
@@ -268,9 +239,11 @@ const canInteract = computed(() => !loading.value)
 :deep(.v-btn) {
   color: white !important;
 }
+
 :deep(.v-app-bar .v-btn .v-icon) {
   color: white !important;
 }
+
 .session-item {
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -278,6 +251,7 @@ const canInteract = computed(() => !loading.value)
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .session-item:hover {
   background-color: #f5f5f5;
 }
