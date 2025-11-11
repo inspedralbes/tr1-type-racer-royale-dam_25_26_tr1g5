@@ -7,7 +7,7 @@ interface Player {
   id: string
   nickname: string
   reps: number
-  cals: number
+  // cals: number <-- Eliminado
   time: number
 }
 interface Room {
@@ -38,7 +38,7 @@ const cameraError = ref(false)
 
 const exerciseCount = ref(0) 
 const sessionTime = ref(0) 
-const caloriesBurned = ref(0) 
+// const caloriesBurned = ref(0) <-- Eliminado
 const isTimerRunning = ref(false) 
 let intervalId: number | null = null 
 
@@ -106,7 +106,7 @@ const broadcastStats = () => {
     socket.emit('exercise:updateStats', { 
       roomId: sessionId.value, 
       reps: exerciseCount.value, 
-      cals: caloriesBurned.value, 
+      // cals: caloriesBurned.value, <-- Eliminado
       time: sessionTime.value 
     })
   }
@@ -114,13 +114,13 @@ const broadcastStats = () => {
 
 const handleSquatRep = () => { 
   repetitionCount.value++ 
-  caloriesBurned.value += Math.floor(Math.random() * 2) + 1 
+  // caloriesBurned.value += Math.floor(Math.random() * 2) + 1 <-- Eliminado
   broadcastStats() 
 }
 
 const incrementExercises = () => { 
   exerciseCount.value++ 
-  caloriesBurned.value += Math.floor(Math.random() * 3) + 2 
+  // caloriesBurned.value += Math.floor(Math.random() * 3) + 2 <-- Eliminado
   broadcastStats() 
 }
 
@@ -129,9 +129,7 @@ const startTimer = () => {
   isTimerRunning.value = true 
   intervalId = window.setInterval(() => { 
     sessionTime.value++ 
-    if (sessionTime.value % 10 === 0) { 
-      caloriesBurned.value += Math.floor(Math.random() * 5) + 1 
-    }
+    // Block de calories eliminado
     broadcastStats() 
   }, 1000)
 }
@@ -159,7 +157,7 @@ const resetStats = () => {
   exerciseCount.value = 0 
   repetitionCount.value = 0 
   sessionTime.value = 0 
-  caloriesBurned.value = 0 
+  // caloriesBurned.value = 0 <-- Eliminado
   broadcastStats() 
 }
 
@@ -250,11 +248,17 @@ const toggleVideoFullScreen = () => {
             :cols="isFullScreen ? 12 : 6" 
             :md="isFullScreen ? 12 : 6"
           >
-            <v-card :class="isFullScreen ? 'fullscreen-card' : 'camera-card'" elevation="1">
+            <v-card :class="isFullScreen ? 'camera-fullscreen' : 'camera-card'" elevation="1">
+              
               <v-card-title class="text-h6 bg-grey-darken-3 text-white d-flex align-center justify-center justify-sm-start">
                 <v-icon class="me-sm-5">mdi-camera</v-icon>
                 <span class="d-none d-sm-inline">La teva càmera</span>
-              </v-card-title>
+                
+                <v-spacer />
+                <v-btn v-if="isFullScreen" icon variant="text" @click="toggleFullScreen">
+                  <v-icon>mdi-fullscreen-exit</v-icon>
+                </v-btn>
+                </v-card-title>
 
               <v-card-text class="pa-0 camera-container">
                 
@@ -265,56 +269,41 @@ const toggleVideoFullScreen = () => {
 
                 <div v-if="isFullScreen" class="fullscreen-grid-overlay">
 
-                  <div class="grid-item rect-left d-flex flex-column align-center justify-center">
-                    <div class="overlay-stat-item text-center">
+                  <div class="grid-item camera-middle d-flex flex-column align-center justify-center">
+                    <pose-squad v-if="isFullScreen" @squat-completed="handleSquatRep"
+                      style="width: 100%; height: 100%;" />
+
+                    <div class="overlay-stat-item text-center mt-2">
                       <div class="overlay-value">{{ repetitionCount }}</div>
                       <div class="overlay-label">Repeticiones</div>
                     </div>
                   </div>
 
-                  <div class="grid-item camera-middle">
-                    <pose-squad 
-                      v-if="isFullScreen" 
-                      @squat-completed="handleSquatRep" 
-                    />
-                    <div class="overlay-stat-top">
-                      <div class="overlay-stat-item text-center">
-                        <div class="overlay-value">{{ formatTime(sessionTime) }}</div>
-                        <div class="overlay-label">Temps</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="grid-item rect-right">
+                  <div class="grid-item rect-right d-flex flex-column justify-start p-2">
                     <h4 class="text-h6">Rectángulo Derecho</h4>
                     <p>Aquí puedes poner más estadísticas.</p>
                   </div>
 
-                  <div class="grid-item box-bottom d-flex align-center">
-                    
+                  <div class="grid-item box-bottom d-flex justify-around align-center p-2">
+                    <div class="overlay-stat-item text-center">
+                      <div class="overlay-value">{{ formatTime(sessionTime) }}</div>
+                      <div class="overlay-label">Tiempo</div>
+                    </div>
+
                     <div class="overlay-stat-item text-center d-flex flex-column align-center">
                       <div class="overlay-value">{{ exerciseCount }}</div>
                       <div class="overlay-label">Series</div>
-                      <v-btn 
-                        color="#FF6600" 
-                        variant="flat" 
-                        size="small" 
-                        @click="incrementExercises" 
-                        class="mt-2" 
+                      <v-btn color="#FF6600" variant="flat" size="small" @click="incrementExercises" class="mt-2"
                         style="pointer-events: all; color: white !important; min-width: 40px;">
                         <v-icon>mdi-plus</v-icon>
                       </v-btn>
                     </div>
 
-                    <div class="overlay-stat-item text-center">
-                      <div class="overlay-value">{{ caloriesBurned }}</div>
-                      <div class="overlay-label">Calories</div>
                     </div>
-                  </div>
 
                 </div>
                 
-                <v-btn icon variant="text" class="fullscreen-btn" @click="toggleFullScreen">
+                <v-btn v-if="!isFullScreen" icon variant="text" class="fullscreen-btn" @click="toggleFullScreen">
                   <v-icon>
                     {{ isFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}
                   </v-icon>
@@ -340,8 +329,7 @@ const toggleVideoFullScreen = () => {
                     <v-card-text>
                       <div><strong>Sèries:</strong> {{ player.reps }}</div>
                       <div><strong>Temps:</strong> {{ formatTime(player.time) }}</div>
-                      <div><strong>Cals:</strong> {{ player.cals }}</div>
-                    </v-card-text>
+                      </v-card-text>
                   </v-card>
                 </v-col>
               </v-row>
@@ -508,7 +496,7 @@ const toggleVideoFullScreen = () => {
   line-height: 1.6;
 }
 
-/* --- ESTILOS PARA FULLSCREEN --- */
+/* --- ESTILOS PARA FULLSCREEN (Vídeo) --- */
 .fullscreen-card {
   position: fixed;
   top: 0; /* Ajustado para empezar desde arriba */
@@ -552,21 +540,46 @@ const toggleVideoFullScreen = () => {
 }
 /* -------------------------------- */
 
+/* --- [NOU] ESTILS PER A CAMERA FULLSCREEN --- */
+.camera-fullscreen {
+  position: fixed;
+  top: 64px; /* Per deixar espai a la v-app-bar */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #000;
+  border-radius: 0;
+}
+
+.camera-player-full {
+  width: 100%;
+  height: calc(100vh - 64px);
+  object-fit: contain;
+  background: #000;
+}
+/* -------------------------------- */
+
+
+/* --- [CANVIAT] NOU DISSENY DEL GRID OVERLAY --- */
 .fullscreen-grid-overlay {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: 1fr 1.8fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1.8fr 1fr; /* 2 columnes: càmera + stats dreta */
+  grid-template-rows: 2fr 1fr; /* 2 files: contingut superior + barra inferior */
   grid-template-areas:
-    "left   middle   right"
-    "bottom bottom   bottom";
+    "middle right"
+    "bottom bottom";
   color: white;
   pointer-events: none;
   gap: 10px;
-  padding: 0 10px;
+  padding: 10px;
   background: #000;
+  height: 100%;
+  box-sizing: border-box;
 }
+/* -------------------------------- */
 
 .grid-item {
   pointer-events: all;
@@ -606,7 +619,7 @@ const toggleVideoFullScreen = () => {
   border: 1px dashed #ffaa00;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; /* Centrat per defecte, el v-if ho canvia */
   gap: 3rem;
   padding: 4px 16px;
 }
@@ -636,14 +649,16 @@ const toggleVideoFullScreen = () => {
   text-transform: uppercase;
 }
 
+/* --- [CANVIAT] Estils de font per a la barra inferior --- */
 .box-bottom .overlay-value {
-  font-size: 2.2rem;
-  line-height: 1;
+  font-size: 2.8rem;
+  line-height: 1.1;
 }
 
 .box-bottom .overlay-label {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
 }
+/* -------------------------------- */
 
 .box-bottom .v-btn {
   margin-top: 4px !important;
