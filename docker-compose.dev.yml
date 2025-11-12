@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fitcam
+      MYSQL_USER: fitcam
+      MYSQL_PASSWORD: fitcam
+    ports:
+      - "3306:3306"
+    volumes:
+      - fitcam_db_dev:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: fitcam
+      PMA_PASSWORD: fitcam
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: BACKDockerfile.dev
+    ports:
+      - "8088:8088"
+    environment:
+      NODE_ENV: development
+      PORT: 8088
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: fitcam
+      DB_PASS: fitcam
+      DB_NAME: fitcam
+      JWT_SECRET: devsecret
+      BCRYPT_ROUNDS: 10
+      CORS_ORIGIN: http://localhost:5173
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - mysql
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:8088
+      VITE_SOCKET_URL: http://localhost:8088
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  fitcam_db_dev:

@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - fitcam_db:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    restart: always
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: ${MYSQL_USER}
+      PMA_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: BACKDockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 8088
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+      BCRYPT_ROUNDS: 10
+      CORS_ORIGIN: https://${SERVER_NAME}
+      # si cal: REDIS_URL, MAIL_..., etc.
+    expose:
+      - "8088"
+    depends_on:
+      - mysql
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: https://${SERVER_NAME}
+        VITE_SOCKET_URL: https://${SERVER_NAME}
+    expose:
+      - "80"
+    restart: always
+
+  proxy:
+    image: nginx:stable
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: always
+
+volumes:
+  fitcam_db:
