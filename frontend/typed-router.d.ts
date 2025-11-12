@@ -21,7 +21,9 @@ declare module 'vue-router/auto-routes' {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/BuscadorExercici': RouteRecordInfo<'/BuscadorExercici', '/BuscadorExercici', Record<never, never>, Record<never, never>>,
     '/Exercici': RouteRecordInfo<'/Exercici', '/Exercici', Record<never, never>, Record<never, never>>,
-    '/ResultatsExercici': RouteRecordInfo<'/ResultatsExercici', '/ResultatsExercici', Record<never, never>, Record<never, never>>,
+    '/login': RouteRecordInfo<'/login', '/login', Record<never, never>, Record<never, never>>,
+    '/register': RouteRecordInfo<'/register', '/register', Record<never, never>, Record<never, never>>,
+    '/resultatsexercici': RouteRecordInfo<'/resultatsexercici', '/resultatsexercici', Record<never, never>, Record<never, never>>,
     '/SalaEspera': RouteRecordInfo<'/SalaEspera', '/SalaEspera', Record<never, never>, Record<never, never>>,
     '/SessioLobby': RouteRecordInfo<'/SessioLobby', '/SessioLobby', Record<never, never>, Record<never, never>>,
   }
@@ -49,8 +51,16 @@ declare module 'vue-router/auto-routes' {
       routes: '/Exercici'
       views: never
     }
-    'src/pages/ResultatsExercici.vue': {
-      routes: '/ResultatsExercici'
+    'src/pages/login.vue': {
+      routes: '/login'
+      views: never
+    }
+    'src/pages/register.vue': {
+      routes: '/register'
+      views: never
+    }
+    'src/pages/resultatsexercici.vue': {
+      routes: '/resultatsexercici'
       views: never
     }
     'src/pages/SalaEspera.vue': {

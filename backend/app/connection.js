@@ -3,7 +3,7 @@ const mysql = require("mysql2/promise");
 
 async function crearTaules() {
     const connection = await mysql.createConnection({
-        host: "127.0.0.1",
+        host: "mysql",
         port: 3306,
         user: "root",
         password: "root",
