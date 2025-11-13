@@ -9,7 +9,7 @@ const routes = [
 
   { path: '/cercador', name: 'BuscadorExercici', component: () => import('@/pages/BuscadorExercici.vue') },
   { path: '/exercici/:id', name: 'Exercici', component: () => import('@/pages/Exercici.vue'), props: true },
-  { path: '/resultats', name: 'ResultatsExercici', component: () => import('@/pages/resultatsexercici.vue') },
+  { path: '/resultats', name: 'ResultatsExercici', component: () => import('@/pages/ResultatsExercici.vue') },
 
   { path: '/sessio/:exerciseId', name: 'SessioLobby', component: () => import('@/pages/SessioLobby.vue'), props: true },
 
