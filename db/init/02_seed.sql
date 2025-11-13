@@ -1,4 +1,3 @@
--- Evita duplicats en re-execucions
 INSERT IGNORE INTO exercicis (nom_exercici, gif) VALUES
 ('Press de banca','/videos/pressbanca.gif'),
 ('Sentadilla amb barra','/videos/sentadillaconbarra.gif'),

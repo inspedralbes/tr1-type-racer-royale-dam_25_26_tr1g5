@@ -4,42 +4,28 @@ import { useRouter, RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const { loading, errorMsg, register, login } = useAuth()
+const { loading, errorMsg, register } = useAuth() // Ara fem servir la funció 'register' del composable
 const form = ref({ nom: '', mail: '', password: '' })
 
 
 async function submit() {
-  errorMsg.value = '';
-  loading.value = true;
+  errorMsg.value = ''
+  loading.value = true
 
   try {
-    const r = await fetch('http://localhost:3000/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nom: form.value.nom,
-        mail: form.value.mail,
-        password: form.value.password
-      })
-    });
+    // Fem servir la lògica centralitzada de 'useAuth'
+    await register(form.value.nom, form.value.mail, form.value.password)
+    
+    // registrat OK -> porta a login
+    router.push({ name: 'Login' })
 
-    const data = await r.json().catch(() => ({}));
-
-    if (!r.ok) {
-      if (r.status === 409) throw new Error('Aquest correu ja existeix');
-      throw new Error(data?.error || 'Error de registre');
-    }
-
-    // registrat OK -> porta a login (o Home si vols)
-    router.push({ name: 'Login' });
   } catch (e: any) {
-    errorMsg.value = e.message || 'Error de registre';
+    // L'error ja ha estat gestionat per 'useAuth'
+    // errorMsg.value = e.message || 'Error de registre';
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
-
-
 </script>
 
 <template>

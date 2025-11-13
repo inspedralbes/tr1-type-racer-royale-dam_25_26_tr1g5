@@ -24,6 +24,7 @@ const router = createRouter({
 // (Opcional) Protegir rutes
 const PUBLIC = new Set(['Home','Login','Register','BuscadorExercici'])
 router.beforeEach((to) => {
+  // Comprova el token amb la clau correcta
   const token = localStorage.getItem('fitcam_token')
   if (!token && !PUBLIC.has(to.name)) {
     return { name: 'Login', query: { redirect: to.fullPath } }

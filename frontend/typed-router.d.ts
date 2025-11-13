@@ -23,7 +23,7 @@ declare module 'vue-router/auto-routes' {
     '/Exercici': RouteRecordInfo<'/Exercici', '/Exercici', Record<never, never>, Record<never, never>>,
     '/login': RouteRecordInfo<'/login', '/login', Record<never, never>, Record<never, never>>,
     '/register': RouteRecordInfo<'/register', '/register', Record<never, never>, Record<never, never>>,
-    '/resultatsexercici': RouteRecordInfo<'/resultatsexercici', '/resultatsexercici', Record<never, never>, Record<never, never>>,
+    '/ResultatsExercici': RouteRecordInfo<'/ResultatsExercici', '/ResultatsExercici', Record<never, never>, Record<never, never>>,
     '/SalaEspera': RouteRecordInfo<'/SalaEspera', '/SalaEspera', Record<never, never>, Record<never, never>>,
     '/SessioLobby': RouteRecordInfo<'/SessioLobby', '/SessioLobby', Record<never, never>, Record<never, never>>,
   }
@@ -59,8 +59,8 @@ declare module 'vue-router/auto-routes' {
       routes: '/register'
       views: never
     }
-    'src/pages/resultatsexercici.vue': {
-      routes: '/resultatsexercici'
+    'src/pages/ResultatsExercici.vue': {
+      routes: '/ResultatsExercici'
       views: never
     }
     'src/pages/SalaEspera.vue': {

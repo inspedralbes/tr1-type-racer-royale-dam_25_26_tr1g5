@@ -1,18 +1,126 @@
-// server.js (ACTUALITZAT)
+// server.js (COMPLET AMB CORS, BD i AUTENTICACIÓ)
 const express = require('express');
 const path = require('path');
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
-const cors = require('cors');
-const httpServer = http.createServer(app);
-const PORT = 3001;
+const cors = require('cors'); 
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
+const httpServer = http.createServer(app);
+const PORT = 3001; 
+
+// --- CONFIGURACIÓ DE LA BASE DE DADES ---
+// !!! Assegura't que la contrasenya és correcta !!!
+const dbPool = mysql.createPool({
+    host: 'localhost',       
+    user: 'root',            
+    password: 'root',        // <-- LA TEVA CONTRASENYA
+    database: 'fitcam',      
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+// --- Claus secretes (millor en variables d'entorn) ---
+const JWT_SECRET = 'la-teva-clau-secreta-molt-llarga-i-dificil';
+
+// --- MIDDLEWARE D'EXPRESS ---
+app.use(cors({ origin: '*' })); 
+app.use(express.json()); 
 app.use(express.static(path.join(__dirname, 'public')));
 
+
+// =======================================================
+// --- RUTES D'API PER AUTENTICACIÓ ---
+// =======================================================
+
+// POST /api/auth/register
+app.post('/api/auth/register', async (req, res) => {
+    const { nom, mail, password } = req.body;
+
+    if (!nom || !mail || !password) {
+        return res.status(400).json({ error: 'Tots els camps són obligatoris' });
+    }
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const contrasenyaHashejada = await bcrypt.hash(password, salt);
+
+        const [result] = await dbPool.execute(
+            'INSERT INTO users (nom_usuari, email, contrasenya) VALUES (?, ?, ?)',
+            [nom, mail, contrasenyaHashejada]
+        );
+
+        console.log(`[REGISTRE] Usuari creat: ${nom} (ID: ${result.insertId})`);
+        res.status(201).json({ message: 'Usuari registrat correctament' });
+
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            console.warn(`[REGISTRE FALLIT] Correu o usuari duplicat: ${mail}`);
+            return res.status(409).json({ error: 'Aquest correu o nom d\'usuari ja existeix' });
+        }
+        
+        console.error('[ERROR REGISTRE]', error);
+        res.status(500).json({ error: 'Error intern del servidor' });
+    }
+});
+
+// POST /api/auth/login
+app.post('/api/auth/login', async (req, res) => {
+    const { mail, password } = req.body;
+
+    if (!mail || !password) {
+        return res.status(400).json({ error: 'Correu i contrasenya obligatoris' });
+    }
+
+    try {
+        const [rows] = await dbPool.execute('SELECT * FROM users WHERE email = ?', [mail]);
+        const user = rows[0];
+
+        if (!user) {
+            console.warn(`[LOGIN FALLIT] Usuari no trobat: ${mail}`);
+            return res.status(401).json({ error: 'Credencials incorrectes' });
+        }
+
+        const esCorrecta = await bcrypt.compare(password, user.contrasenya);
+
+        if (!esCorrecta) {
+            console.warn(`[LOGIN FALLIT] Contrasenya incorrecta per: ${mail}`);
+            return res.status(401).json({ error: 'Credencials incorrectes' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, nom: user.nom_usuari, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '1h' } 
+        );
+
+        console.log(`[LOGIN OK] Usuari: ${user.nom_usuari}`);
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                nom: user.nom_usuari,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        console.error('[ERROR LOGIN]', error);
+        res.status(500).json({ error: 'Error intern del servidor' });
+    }
+});
+
+
+// =======================================================
+// --- CODI DE SOCKET.IO ---
+// =======================================================
 const io = new Server(httpServer, {
     cors: {
-        origin: '*',
+        origin: '*', 
         methods: ['GET', 'POST']
     }
 });
@@ -49,7 +157,7 @@ io.on('connection', (socket) => {
             hostId: socket.id,
             isPrivate: isPrivate,
             players: [
-                { id: socket.id, nickname: hostName, reps: 0, cals: 0, time: 0, isReady: false } // <-- 'isReady' AFEGIT
+                { id: socket.id, nickname: hostName, reps: 0, cals: 0, time: 0, isReady: false }
             ]
         };
 
@@ -72,7 +180,7 @@ io.on('connection', (socket) => {
         if (!room) return socket.emit('session:error', 'La sala no existeix.');
         if (room.players.length >= 4) return socket.emit('session:error', 'La sala està plena.');
 
-        const newPlayer = { id: socket.id, nickname: nickname, reps: 0, cals: 0, time: 0, isReady: false }; // <-- 'isReady' AFEGIT
+        const newPlayer = { id: socket.id, nickname: nickname, reps: 0, cals: 0, time: 0, isReady: false };
         room.players.push(newPlayer);
         
         socket.join(room.id);
@@ -81,7 +189,6 @@ io.on('connection', (socket) => {
         console.log(`[SALA UNIDA] Codi: ${roomId}, Usuari: ${nickname}`);
     });
 
-    // --- NOU ESDEVENIMENT: Un usuari canvia el seu estat "Llest" ---
     socket.on('session:setReady', (data) => {
         const { roomId, isReady } = data;
         const room = roomDetails[roomId];
@@ -89,31 +196,26 @@ io.on('connection', (socket) => {
 
         const player = room.players.find(p => p.id === socket.id);
         if (player) {
-            player.isReady = !!isReady; // Assegurem que sigui un booleà
-            // Enviem l'estat actualitzat a TOTHOM a la sala
+            player.isReady = !!isReady; 
             io.to(room.id).emit('session:roomUpdate', room);
             console.log(`[ESTAT CANVIAT] Codi: ${roomId}, Usuari: ${player.nickname}, Llest: ${player.isReady}`);
         }
     });
 
-    // --- NOU ESDEVENIMENT: El host intenta iniciar la sessió ---
     socket.on('session:requestStart', (data) => {
         const { roomId } = data;
         const room = roomDetails[roomId];
         if (!room) return socket.emit('session:error', 'La sala no existeix.');
 
-        // Comprovar que qui ho demana és el host
         if (socket.id !== room.hostId) {
             return socket.emit('session:error', 'Només el host pot iniciar la sessió.');
         }
 
-        // Comprovar que TOTS els jugadors estiguin a punt
         const allReady = room.players.every(p => p.isReady === true);
         if (!allReady) {
             return socket.emit('session:error', 'No tots els jugadors estan a punt.');
         }
 
-        // Tot correcte! Iniciem la sessió per a tothom
         console.log(`[SESSIÓ INICIADA] Codi: ${roomId}`);
         io.to(room.id).emit('session:start', room);
     });
@@ -172,5 +274,5 @@ io.on('connection', (socket) => {
 });
 
 httpServer.listen(PORT, () => {
-    console.log(`Servidor Socket.IO corrent a http://localhost:${PORT}`);
+    console.log(`Servidor API i Socket.IO corrent a http://localhost:${PORT}`);
 });

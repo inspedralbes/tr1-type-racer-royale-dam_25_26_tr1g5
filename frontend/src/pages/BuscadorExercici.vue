@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import NavBar from '@/components/NavBar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -143,24 +144,7 @@ const login = () => {
 
 <template>
   <v-app>
-    <v-app-bar color="#FF6600" class="d-flex align-center justify-center" flat>
-      <a href="http://localhost:3000">
-        <div style="height: 128px; width: 128px;">
-          <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
-        </div>
-      </a>
-      <v-container class="d-flex align-center pa-0">
-        <v-toolbar-title class="text-white text-h5 font-weight-bold">
-          Selector d'exercicis
-        </v-toolbar-title>
-
-        <v-spacer></v-spacer>
-
-        <v-btn color="white" text class="text-none" @click="loginDialog = true">
-          {{ userName ? `Hola, ${userName}` : 'Log In / Registrar-se' }}
-        </v-btn>
-      </v-container>
-    </v-app-bar>
+   <NavBar/>
 
     <v-main>
       <v-container class="py-8" fluid>
