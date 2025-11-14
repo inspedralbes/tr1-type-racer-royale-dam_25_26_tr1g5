@@ -178,8 +178,16 @@ const finalitzarSessio = () => {
   router.push({ 
     name: 'ResultatsExercici',
     query: {
-      tecnica: (Math.random() * 100).toFixed(1), 
-      reps: repetitionCount.value 
+      // Dades que ja tenies:
+      tecnica: (Math.random() * 100).toFixed(1), // TODO: Canviar per una puntuació real
+      reps: repetitionCount.value,
+
+      // --- NOU ---
+      temps: sessionTime.value,             // Passa el temps total
+      series: exerciseCount.value,          // Passa les sèries totals
+      nom: exerciseName,                    // Passa el nom de l'exercici
+      id: route.params.id as string,        // Passa l'ID de l'exercici (per als PRs)
+      sessionId: sessionId.value            // Passa el sessionId
     }
   })
 }

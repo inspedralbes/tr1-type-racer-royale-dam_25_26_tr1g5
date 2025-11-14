@@ -1,4 +1,4 @@
-// server.js (COMPLET AMB CORS, BD i AUTENTICACIÓ)
+// server.js (COMPLET AMB CORS, BD, AUTENTICACIÓ I NOU ENDPOINT)
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -13,7 +13,6 @@ const httpServer = http.createServer(app);
 const PORT = 3001; 
 
 // --- CONFIGURACIÓ DE LA BASE DE DADES ---
-// !!! Assegura't que la contrasenya és correcta !!!
 const dbPool = mysql.createPool({
     host: 'localhost',       
     user: 'root',            
@@ -112,6 +111,86 @@ app.post('/api/auth/login', async (req, res) => {
         console.error('[ERROR LOGIN]', error);
         res.status(500).json({ error: 'Error intern del servidor' });
     }
+});
+
+// =======================================================
+// --- NOU: MIDDLEWARE I RUTA PER RESULTATS ---
+// =======================================================
+
+// NOU: Middleware per verificar el Token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Format: "Bearer TOKEN"
+  
+  if (token == null) {
+    return res.status(401).json({ error: 'Token no proporcionat' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Token invàlid' });
+    }
+    req.user = user; // Afegeix { id, nom, email } a la request
+    next();
+  });
+}
+
+// NOU: Endpoint per guardar resultats
+app.post('/api/resultats', authenticateToken, async (req, res) => {
+  try {
+    // 1. Aconseguim l'ID de l'usuari (des del token)
+    const userId = req.user.id; 
+
+    // 2. Aconseguim les dades del frontend
+    const { 
+      nomExercici, // p.ex: "Sentadilla amb barra"
+      tecnica, 
+      reps, 
+      series, 
+      temps, 
+      sessionId 
+    } = req.body;
+
+    // 3. Busquem l'ID (INT) de l'exercici a la BD usant el seu nom
+    const [rows] = await dbPool.execute(
+      'SELECT id FROM exercicis WHERE nom_exercici = ?', 
+      [nomExercici]
+    );
+
+    if (rows.length === 0) {
+      console.warn(`[RESULTATS] Exercici no trobat a la BD: ${nomExercici}`);
+      return res.status(404).json({ error: 'Exercici no trobat' });
+    }
+    const exerciciIdInt = rows[0].id; // Aquest és l'INT que necessita la BD
+
+    // 4. Creem la consulta SQL
+    const sql = `
+      INSERT INTO resultats 
+        (user_id, exercici_id, tecnica, repeticions, series, temps_segons, session_grup_id)
+      VALUES 
+        (?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const params = [
+      userId,
+      exerciciIdInt,
+      tecnica,
+      reps,
+      series,
+      temps,
+      sessionId
+    ];
+
+    // 5. Executem la consulta
+    await dbPool.execute(sql, params); 
+
+    console.log(`[RESULTATS] Guardats per a user ${userId} (Exercici ID: ${exerciciIdInt})`);
+    res.status(201).json({ message: 'Resultats guardats correctament' });
+
+  } catch (error) {
+    console.error('Error al guardar resultats a la BD:', error);
+    res.status(500).json({ error: 'Error intern del servidor' });
+  }
 });
 
 
