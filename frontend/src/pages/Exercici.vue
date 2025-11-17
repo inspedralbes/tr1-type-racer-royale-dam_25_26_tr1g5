@@ -235,27 +235,10 @@ const toggleVideoFullScreen = () => {
               :class="isVideoFullScreen ? 'fullscreen-card' : 'video-card'" 
               elevation="3"
             >
-              <v-card-title class="text-h6 bg-grey-darken-2 text-white d-flex align-center justify-center justify-sm-start">
-                <v-icon class="me-sm-2">mdi-play-circle</v-icon>
-                <span class="d-none d-sm-inline">Video de demostració</span>
-              </v-card-title>
-              
-              <v-card-text class="pa-0 video-player-container">
-                <v-img :src="videoUrl" class="video-player" />
-                <v-btn icon variant="text" class="fullscreen-btn" @click="toggleVideoFullScreen">
-                  <v-icon>
-                    {{ isVideoFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}
-                  </v-icon>
-                </v-btn>
-              </v-card-text>
             </v-card>
           </v-col>
 
-          <v-col 
-            v-if="!isVideoFullScreen" 
-            :cols="isFullScreen ? 12 : 6" 
-            :md="isFullScreen ? 12 : 6"
-          >
+          <v-col cols="12">
             <v-card :class="isFullScreen ? 'camera-fullscreen' : 'camera-card'" elevation="1">
               
               <v-card-title class="text-h6 bg-grey-darken-3 text-white d-flex align-center justify-center justify-sm-start">
@@ -377,66 +360,70 @@ const toggleVideoFullScreen = () => {
           </v-col>
         </v-row>
 
-        <v-row class="mt-4">
-          
-          <v-col cols="6" sm="6" md="4">
-            <v-card class="stat-card" elevation="3">
-              <v-card-text class="text-center pa-6">
-                <div class="stat-icon mb-3">
-                  <v-icon size="32" color="#FF6600">mdi-timer</v-icon>
-                </div>
-                <div class="stat-value text-h5 font-weight-bold mb-2">
-                  {{ formatTime(sessionTime) }}
-                </div>
-                <div class="stat-label text-body-1 mb-4">
-                  Temps de Sessió
-                </div>
-                <div class="timer-buttons">
-                  <v-btn
-                    :color="isTimerRunning ? 'warning' : 'success'"
-                    variant="flat"
-                    @click="toggleTimer"
-                    size="small"
-                  >
-                    <v-icon class="me-1">{{ isTimerRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
-                    {{ isTimerRunning ? 'Pausar' : 'Iniciar' }}
-                  </v-btn>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
+<v-row class="mt-4" align="center">
+  <!-- Temporizador -->
+  <v-col cols="4">
+    <v-card class="stat-card" elevation="3">
+      <v-card-text class="text-center pa-6">
+        <div class="stat-icon mb-3">
+          <v-icon size="32" color="#FF6600">mdi-timer</v-icon>
+        </div>
+        <div class="stat-value text-h5 font-weight-bold mb-2">
+          {{ formatTime(sessionTime) }}
+        </div>
+        <div class="stat-label text-body-1 mb-4">
+          Temps de Sessió
+        </div>
+        <div class="timer-buttons">
+          <v-btn
+            :color="isTimerRunning ? 'warning' : 'success'"
+            variant="flat"
+            @click="toggleTimer"
+            size="small"
+          >
+            <v-icon class="me-1">{{ isTimerRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+            {{ isTimerRunning ? 'Pausar' : 'Iniciar' }}
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+  </v-col>
 
-          <v-col cols="6" sm="6" md="4">
-            <v-card class="stat-card" elevation="3">
-              <v-card-text class="text-center pa-6">
-                <div class="stat-icon mb-3">
-                  <v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon>
-                </div>
-                <div class="stat-value text-h5 font-weight-bold mb-2">
-                  {{ exerciseCount }}
-                </div>
-                <div class="stat-label text-body-1 mb-4">
-                  Series Completades
-                </div>
-                <v-btn color="#FF6600" variant="flat" block class="py-2 text-body-2" style="font-size: 0.8rem;"
-                  @click="incrementExercises">
-                  <v-icon class="text-body-">mdi-plus</v-icon>
-                  Series
-                </v-btn>
-              </v-card-text>
-            </v-card>
-          </v-col>
+  <!-- Botones centrales -->
+  <v-col cols="4" class="d-flex flex-column align-center justify-center">
+    <v-btn color="#FF6600" size="large" variant="flat" class="mb-2" @click="toggleVideoFullScreen">
+      <v-icon class="me-2">mdi-play-circle</v-icon>
+      Video del exercici
+    </v-btn>
+    <v-btn color="#FF6600" size="large" variant="flat" @click="finalitzarSessio">
+      <v-icon class="me-2">mdi-flag-checkered</v-icon>
+      Finalitzar Sessió
+    </v-btn>
+  </v-col>
 
-          </v-row>
+  <!-- Series completadas -->
+  <v-col cols="4">
+    <v-card class="stat-card" elevation="3">
+      <v-card-text class="text-center pa-6">
+        <div class="stat-icon mb-3">
+          <v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon>
+        </div>
+        <div class="stat-value text-h5 font-weight-bold mb-2">
+          {{ exerciseCount }}
+        </div>
+        <div class="stat-label text-body-1 mb-4">
+          Series Completades
+        </div>
+        <v-btn color="#FF6600" variant="flat" block class="py-2 text-body-2" style="font-size: 0.8rem;"
+          @click="incrementExercises">
+          <v-icon>mdi-plus</v-icon>
+          Series
+        </v-btn>
+      </v-card-text>
+    </v-card>
+  </v-col>
+</v-row>
 
-        <v-row class="mt-6">
-          <v-col cols="12" class="text-center">
-            <v-btn color="#FF6600" size="large" variant="flat" @click="finalitzarSessio">
-              <v-icon class="me-2">mdi-flag-checkered</v-icon>
-              Finalitzar Sessió
-            </v-btn>
-          </v-col>
-        </v-row>
 
       </v-container>
     </v-main>
@@ -444,50 +431,88 @@ const toggleVideoFullScreen = () => {
 </template>
 
 <style scoped>
+/* Estilos de cámara y video */
 .video-card,
 .camera-card {
   border-radius: 12px;
   overflow: hidden;
-  position: relative; /* Añadido para posicionar el botón de fullscreen */
+  position: relative;
 }
 
-/* Contenedores de video y cámara para posicionar el botón */
 .video-player-container,
 .camera-container {
   position: relative;
-  min-height: 415px; /* Asegura un alto mínimo si no hay contenido */
-  background: #000;
-  height: 100%;
-  display: flex; /* Añadido para que el contenido dentro se ajuste bien */
-  align-items: center; /* Centra el contenido verticalmente */
-  justify-content: center; /* Centra el contenido horizontalmente */
-}
-
-.video-player {
   width: 100%;
-  height: 415px;
-  object-fit: contain;
+  min-height: 415px;
   background: #000;
-  display: block;
-}
-
-.camera-player { /* Este estilo parece no usarse directamente en el template actual, pero lo mantengo */
-  width: 100%;
-  height: 415px;
-  object-fit: contain;
-  background: #000;
-  display: block;
-}
-
-.camera-error {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 415px;
-  color: #999;
 }
 
+.camera-fullscreen {
+  position: fixed;
+  top: 64px; /* espacio para v-app-bar */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #000;
+  border-radius: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.camera-fullscreen video,
+.camera-fullscreen pose-squad {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Estilos de fullscreen para video */
+.fullscreen-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #000;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-card .v-card-title {
+  flex-shrink: 0;
+}
+
+.fullscreen-card .v-card-text {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fullscreen-card .video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  z-index: 10;
+}
+
+/* Estadísticas y botones */
 .stat-card {
   border-radius: 12px;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -520,94 +545,13 @@ const toggleVideoFullScreen = () => {
   justify-content: center;
 }
 
-:deep(.v-toolbar-title) {
-  color: white !important;
-}
-
-:deep(.v-btn) {
-  color: white !important;
-}
-
-:deep(.v-app-bar .v-btn .v-icon) {
-  color: white !important;
-}
-
-.v-card-text div {
-  line-height: 1.6;
-}
-
-/* --- ESTILOS PARA FULLSCREEN (Vídeo) --- */
-.fullscreen-card {
-  position: fixed;
-  top: 0; /* Ajustado para empezar desde arriba */
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  background: #000;
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.fullscreen-card .v-card-title {
-  flex-shrink: 0; /* Asegura que el título no se encoja */
-}
-
-.fullscreen-card .v-card-text {
-  flex-grow: 1; /* Permite que el contenido ocupe el espacio restante */
-  height: auto; /* Anula la altura fija si la hubiera */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.fullscreen-card .video-player,
-.fullscreen-card .camera-player {
-  width: 100%;
-  height: 100%; /* El video/cámara ocupa todo el espacio disponible */
-  object-fit: contain;
-}
-
-.fullscreen-btn {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  z-index: 10; /* Asegura que esté por encima del contenido */
-}
-/* -------------------------------- */
-
-/* --- [NOU] ESTILS PER A CAMERA FULLSCREEN --- */
-.camera-fullscreen {
-  position: fixed;
-  top: 64px; /* Per deixar espai a la v-app-bar */
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  background: #000;
-  border-radius: 0;
-}
-
-.camera-player-full {
-  width: 100%;
-  height: calc(100vh - 64px);
-  object-fit: contain;
-  background: #000;
-}
-/* -------------------------------- */
-
-
-/* --- [CANVIAT] NOU DISSENY DEL GRID OVERLAY --- */
+/* Fullscreen overlay de cámara */
 .fullscreen-grid-overlay {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: 1.8fr 1fr; /* 2 columnes: càmera + stats dreta */
-  grid-template-rows: 2fr 1fr; /* 2 files: contingut superior + barra inferior */
+  grid-template-columns: 1.8fr 1fr;
+  grid-template-rows: 2fr 1fr;
   grid-template-areas:
     "middle right"
     "bottom bottom";
@@ -619,7 +563,6 @@ const toggleVideoFullScreen = () => {
   height: 100%;
   box-sizing: border-box;
 }
-/* -------------------------------- */
 
 .grid-item {
   pointer-events: all;
@@ -629,40 +572,26 @@ const toggleVideoFullScreen = () => {
   min-height: 0;
 }
 
-.rect-left {
-  grid-area: left;
-  border: 1px dashed #00ff88;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
 .camera-middle {
   grid-area: middle;
   position: relative;
   background: #000;
   padding: 0;
-  border: 2px solid red;
   overflow: hidden;
 }
 
 .rect-right {
   grid-area: right;
-  border: 1px dashed #00aaff;
   overflow: hidden;
-  /* [CANVI] Afegit per permetre l'scroll intern si la llista és llarga */
   display: flex;
   flex-direction: column;
 }
 
 .box-bottom {
   grid-area: bottom;
-  border: 1px dashed #ffaa00;
   display: flex;
   align-items: center;
-  justify-content: center; /* Centrat per defecte, el v-if ho canvia */
+  justify-content: center;
   gap: 3rem;
   padding: 4px 16px;
 }
@@ -692,7 +621,6 @@ const toggleVideoFullScreen = () => {
   text-transform: uppercase;
 }
 
-/* --- [CANVIAT] Estils de font per a la barra inferior --- */
 .box-bottom .overlay-value {
   font-size: 2.8rem;
   line-height: 1.1;
@@ -701,9 +629,15 @@ const toggleVideoFullScreen = () => {
 .box-bottom .overlay-label {
   font-size: 1.1rem;
 }
-/* -------------------------------- */
 
 .box-bottom .v-btn {
   margin-top: 4px !important;
+}
+
+/* Toolbar y botones */
+:deep(.v-toolbar-title),
+:deep(.v-btn),
+:deep(.v-app-bar .v-btn .v-icon) {
+  color: white !important;
 }
 </style>
