@@ -281,16 +281,48 @@ const toggleVideoFullScreen = () => {
                     <pose-squad v-if="isFullScreen" @squat-completed="handleSquatRep"
                       style="width: 100%; height: 100%;" />
 
-                    <div class="overlay-stat-item text-center mt-2">
-                      <div class="overlay-value">{{ repetitionCount }}</div>
-                      <div class="overlay-label">Repeticiones</div>
+                    <div class="overlay-stat-top">
+                      <div class="overlay-stat-item text-center">
+                        <div class="overlay-value">{{ repetitionCount }}</div>
+                        <div class="overlay-label">Repeticiones</div>
+                      </div>
                     </div>
                   </div>
 
                   <div class="grid-item rect-right d-flex flex-column justify-start p-2">
-                    <h4 class="text-h6">Rectángulo Derecho</h4>
-                    <p>Aquí puedes poner más estadísticas.</p>
+                    <h4 class="text-h6 mb-2">
+                      {{ isGroupSession ? 'Estadístiques del Grup' : 'Sessió Individual' }}
+                    </h4>
+
+                    <div v-if="isGroupSession && roomState" style="overflow-y: auto; flex-grow: 1; max-height: 100%;">
+                      <v-card
+                        v-for="player in roomState.players"
+                        :key="player.id"
+                        :color="player.nickname === myNickname ? 'orange-lighten-5' : 'grey-lighten-4'"
+                        flat
+                        border
+                        class="mb-2"
+                      >
+                        <v-card-title class="text-subtitle-2 font-weight-bold pa-2">
+                          <v-icon :color="roomState.hostId === player.id ? 'amber' : 'grey'" left size="small">
+                            {{ roomState.hostId === player.id ? 'mdi-crown' : 'mdi-account' }}
+                          </v-icon>
+                          {{ player.nickname }} {{ player.nickname === myNickname ? '(Tu)' : '' }}
+                        </v-card-title>
+                        <v-card-text class="pa-2 text-caption">
+                          <div><strong>Sèries:</strong> {{ player.reps }}</div>
+                          <div><strong>Temps:</strong> {{ formatTime(player.time) }}</div>
+                        </v-card-text>
+                      </v-card>
+                    </div>
+                    <div v-else-if="isGroupSession && !roomState" class="text-caption">
+                      Esperant dades del grup...
+                    </div>
+                    <div v-else class="text-caption">
+                      No hi ha estadístiques de grup en mode individual.
+                    </div>
                   </div>
+
 
                   <div class="grid-item box-bottom d-flex justify-around align-center p-2">
                     <div class="overlay-stat-item text-center">
@@ -620,6 +652,9 @@ const toggleVideoFullScreen = () => {
   grid-area: right;
   border: 1px dashed #00aaff;
   overflow: hidden;
+  /* [CANVI] Afegit per permetre l'scroll intern si la llista és llarga */
+  display: flex;
+  flex-direction: column;
 }
 
 .box-bottom {

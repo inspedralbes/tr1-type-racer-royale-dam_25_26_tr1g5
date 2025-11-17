@@ -18,15 +18,20 @@ const sessionId = ref((route.query.sessionId as string) || null)
 // --- Lògica de la Vista ---
 const isGroupSession = computed(() => !!sessionId.value)
 const isNewPR = ref(false)
+const myNickname = ref(localStorage.getItem('userName') || 'Tu') // <-- NOU: Per identificar-nos
 
-const classificacio = ref([
-  { nom: 'Joan', tecnica: 92, reps: 35 },
-  { nom: 'Maria', tecnica: 88, reps: 32 },
-  { nom: 'Pau', tecnica: 75, reps: 28 },
-  { nom: 'Tu', tecnica: tecnica.value, reps: reps.value }, 
-])
+// Interfície per a les dades del rànquing
+interface RankingEntry {
+  nom: string
+  tecnica: number
+  reps: number
+  series: number // <-- NOU: Per a la taula
+}
 
-// --- NOU: Funció per guardar a la BD ---
+// <-- CANVIAT: Inicialitzem buit, es carregarà des de l'API
+const classificacio = ref<RankingEntry[]>([]) 
+
+// --- Funció per guardar a la BD (la teva funció original) ---
 async function guardarResultats() {
   // 1. Aconseguir el token de l'usuari
   const token = localStorage.getItem('fitcam_token');
@@ -69,10 +74,58 @@ async function guardarResultats() {
   }
 }
 
+// --- NOU: Funció per OBTENIR resultats del grup ---
+async function fetchGroupResults() {
+  const token = localStorage.getItem('fitcam_token');
+  if (!token || !sessionId.value) return; // Necessitem token i ID de sessió
+
+  try {
+    // 3. Cridem a un (suposat) endpoint que retorna els resultats de la sessió
+    const response = await fetch(`http://localhost:3001/api/resultats/${sessionId.value}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('No s\'han pogut carregar els resultats del grup');
+    }
+
+    // Assumim que l'API retorna: [{ nickname: 'Joan', series: 5, reps: 50, tecnica: 80 }, ...]
+    const groupData: any[] = await response.json(); 
+
+    // 4. Formategem les dades per a la nostra taula
+    const formattedData = groupData.map(player => ({
+      nom: player.nickname === myNickname.value ? 'Tu' : player.nickname,
+      tecnica: player.tecnica || 0,
+      reps: player.reps || 0,
+      series: player.series || 0
+    }));
+
+    // 5. Ordenem (això ho fa 'posicioUsuari' però ho fem aquí per assegurar)
+    formattedData.sort((a, b) => {
+      if (b.tecnica !== a.tecnica) return b.tecnica - a.tecnica; // Prioritzem tècnica
+      return b.reps - a.reps; // Després repeticions
+    });
+
+    classificacio.value = formattedData;
+
+  } catch (error) {
+    console.error("Error al carregar resultats del grup:", error);
+    // Si falla, almenys mostrem l'usuari actual
+    classificacio.value = [{ 
+      nom: 'Tu', 
+      tecnica: tecnica.value, 
+      reps: reps.value, 
+      series: series.value 
+    }];
+  }
+}
+
 
 onMounted(() => {
   // 1. Comprovem el rècord de repeticions (això és local)
-  const prKey = `pr_${exerciseId.value}_reps` // Fem servir l'ID string per a localStorage
+  const prKey = `pr_${exerciseId.value}_reps`
   const oldPR = Number(localStorage.getItem(prKey) || 0)
 
   if (reps.value > oldPR) {
@@ -80,8 +133,22 @@ onMounted(() => {
     isNewPR.value = true
   }
 
-  // 2. NOU: Intentem guardar els resultats a la BD
+  // 2. Intentem guardar els nostres resultats a la BD
   guardarResultats();
+
+  // 3. CANVIAT: Mirem si és sessió de grup
+  if (isGroupSession.value) {
+    // Si és grup, anem a buscar els resultats de TOTS
+    fetchGroupResults();
+  } else {
+    // Si és individual, només mostrem les dades de 'Tu'
+    classificacio.value = [{ 
+      nom: 'Tu', 
+      tecnica: tecnica.value, 
+      reps: reps.value, 
+      series: series.value 
+    }];
+  }
 })
 
 const formatTime = (seconds: number): string => {
@@ -102,6 +169,7 @@ const feedbackTecnica = computed(() => {
   return "Continua practicant. Mira atentament el vídeo de demostració per corregir la forma."
 })
 
+// Aquesta funció ara trobarà la posició de 'Tu' a la llista real
 const posicioUsuari = computed(() => {
   const sorted = [...classificacio.value].sort((a, b) => {
     if (b.tecnica !== a.tecnica) return b.tecnica - a.tecnica
@@ -196,7 +264,8 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
               <template v-if="isGroupSession">
                 <v-divider class="my-4"></v-divider>
                 <h3 class="text-h6 font-weight-bold mb-3">Rànquing de la Sessió</h3>
-                <p class="text-body-1 mb-4">
+                
+                <p v-if="classificacio.length > 0" class="text-body-1 mb-4">
                   La teva posició:
                   <strong class="text-h6" style="color:#FF6600">#{{ posicioUsuari }}</strong>
                 </p>
@@ -206,17 +275,21 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
                     <tr>
                       <th>Pos.</th>
                       <th>Nom</th>
-                      <th>Tècnica (%)</th>
-                      <th>Reps</th>
+                      <th>Sèries</th> <th>Reps</th>
                     </tr>
                   </thead>
                   <tbody>
+                    <tr v-if="classificacio.length === 0">
+                      <td colspan="4">
+                        <v-progress-circular indeterminate color="#FF6600" class="my-4"></v-progress-circular>
+                        <p>Carregant resultats del grup...</p>
+                      </td>
+                    </tr>
                     <tr v-for="(row, index) in classificacio" :key="index"
                       :class="{ 'bg-orange-lighten-5 font-weight-bold': row.nom === 'Tu' }">
                       <td>#{{ index + 1 }}</td>
                       <td>{{ row.nom }}</td>
-                      <td>{{ row.tecnica.toFixed(0) }}</td>
-                      <td>{{ row.reps }}</td>
+                      <td>{{ row.series }}</td> <td>{{ row.reps }}</td>
                     </tr>
                   </tbody>
                 </v-table>
@@ -271,4 +344,4 @@ th {
 .v-progress-circular > .v-progress-circular__content {
   color: #FF6600;
 }
-</style>  
+</style>
