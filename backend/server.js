@@ -10,22 +10,21 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const httpServer = http.createServer(app);
-const PORT = 3001; 
+const PORT = process.env.PORT || 3001;
 
 // --- CONFIGURACIÓ DE LA BASE DE DADES ---
 const dbPool = mysql.createPool({
-    host: 'localhost',       
-    user: 'root',            
-    password: 'root',        // <-- LA TEVA CONTRASENYA
-    database: 'fitcam',      
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS, // Nota: DB_PASS, no MYSQL_PASSWORD
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
 // --- Claus secretes (millor en variables d'entorn) ---
-const JWT_SECRET = 'la-teva-clau-secreta-molt-llarga-i-dificil';
-
+const JWT_SECRET = process.env.JWT_SECRET || 'UnaClauLlargaISecreta';
 // --- MIDDLEWARE D'EXPRESS ---
 app.use(cors({ origin: '*' })); 
 app.use(express.json()); 
