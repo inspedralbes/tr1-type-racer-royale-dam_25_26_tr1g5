@@ -16,15 +16,16 @@ const PORT = process.env.PORT || 3001;
 
 // --- CONFIGURACIÓ BD ---
 const dbPool = mysql.createPool({
-  host: process.env.MYSQL_HOST || '127.0.0.1',
-  user: process.env.MYSQL_USER || 'fitcam',
-  password: process.env.MYSQL_PASSWORD || '1035papA.',
-  database: process.env.MYSQL_DATABASE || 'fitcam',
-  port: Number(process.env.MYSQL_PORT) || 3306,
+  host: '127.0.0.1',
+  user: 'root',                 // PROVISIONAL, per provar
+  password: '1035papA.',// la mateixa que uses amb `mysql -uroot -p` al container
+  database: 'fitcam',
+  port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'FitCamSecretKey123';
 

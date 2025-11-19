@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import NavBar from '@/components/NavBar.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
 const search = ref('')
-const loginDialog = ref(false)
-const tempName = ref('')
-const userName = ref('')
 
 const exerciseDialog = ref(false)
 const selectedExercise = ref<Exercise | null>(null)
@@ -89,13 +86,6 @@ const exercises = ref<Exercise[]>([
   }
 ])
 
-onMounted(() => {
-  const storedName = localStorage.getItem('userName')
-  if (storedName) {
-    userName.value = storedName
-  }
-})
-
 const normalize = (str: string) =>
   str
     .normalize('NFD')
@@ -113,9 +103,7 @@ const openExerciseDialog = (exercise: Exercise) => {
   exerciseDialog.value = true
 }
 
-// --- MODIFICAT ---
-// Aquesta funció ara inclou el 'video' (GIF) en la query,
-// combinant la lògica dels dos fitxers.
+// Ara NO mirem cap login, només naveguem directe al lobby
 const confirmGoToLobby = () => {
   if (selectedExercise.value) {
     router.push({
@@ -123,42 +111,59 @@ const confirmGoToLobby = () => {
       params: { exerciseId: selectedExercise.value.id },
       query: {
         name: selectedExercise.value.name,
-        video: selectedExercise.value.gif // <-- Aquesta línia és la millora del segon fitxer
+        video: selectedExercise.value.gif
       }
     })
   }
   exerciseDialog.value = false
   selectedExercise.value = null
 }
-
-const login = () => {
-  if (tempName.value.trim()) {
-    const name = tempName.value.trim()
-    userName.value = name
-    localStorage.setItem('userName', name)
-    tempName.value = ''
-    loginDialog.value = false
-  }
-}
 </script>
 
 <template>
   <v-app>
-   <NavBar/>
+    <NavBar />
+
     <v-main>
       <v-container class="py-8" fluid>
         <v-row justify="center" class="mb-8">
           <v-col cols="12" sm="10" md="8" lg="6">
-            <v-text-field v-model="search" label="Buscar exercici..." prepend-inner-icon="mdi-magnify"
-              variant="outlined" clearable hide-details density="comfortable" bg-color="surface" />
+            <v-text-field
+              v-model="search"
+              label="Buscar exercici..."
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              clearable
+              hide-details
+              density="comfortable"
+              bg-color="surface"
+            />
           </v-col>
         </v-row>
 
         <v-row justify="center">
-          <v-col v-for="exercise in filteredExercises" :key="exercise.id" cols="12" sm="6" md="4" lg="3">
-            <v-card class="exercise-card" elevation="2" height="200" @click="openExerciseDialog(exercise)" hover>
+          <v-col
+            v-for="exercise in filteredExercises"
+            :key="exercise.id"
+            cols="12"
+            sm="6"
+            md="4"
+            lg="3"
+          >
+            <v-card
+              class="exercise-card"
+              elevation="2"
+              height="200"
+              @click="openExerciseDialog(exercise)"
+              hover
+            >
               <div class="card-background" />
-              <v-img v-if="exercise.gif" :src="exercise.gif" class="gif-overlay" cover />
+              <v-img
+                v-if="exercise.gif"
+                :src="exercise.gif"
+                class="gif-overlay"
+                cover
+              />
               <div class="card-content">
                 <h3 class="exercise-title">{{ exercise.name }}</h3>
               </div>
@@ -168,8 +173,12 @@ const login = () => {
       </v-container>
     </v-main>
 
-    <v-footer color="#FF6600" class="text-center d-flex align-center justify-center" height="60"
-      style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;">
+    <v-footer
+      color="#FF6600"
+      class="text-center d-flex align-center justify-center"
+      height="60"
+      style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;"
+    >
       <a href="/">
         <div style="height: 128px; width: 128px;">
           <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
@@ -177,29 +186,7 @@ const login = () => {
       </a>
     </v-footer>
 
-    <!-- Login -->
-
-    <v-dialog v-model="loginDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h6 pa-4">
-          Iniciar sessió / Registrar-se
-        </v-card-title>
-        <v-card-text class="pb-2">
-          <v-text-field v-model="tempName" label="Nom d'usuari" variant="outlined" density="comfortable" hide-details
-            @keyup.enter="login" />
-        </v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" @click="loginDialog = false">
-            Cancel·lar
-          </v-btn>
-          <v-btn color="#FF6600" variant="flat" @click="login">
-            Acceptar
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
+    <!-- Diàleg d'exercici -->
     <v-dialog v-model="exerciseDialog" max-width="800">
       <v-card v-if="selectedExercise">
         <v-card-title class="text-h5 pa-4 bg-primary">
@@ -209,15 +196,20 @@ const login = () => {
         <v-card-text class="pa-4">
           <v-row>
             <v-col cols="12" md="6">
-              <v-img :src="selectedExercise.gif" :alt="`GIF de ${selectedExercise.name}`" cover height="300"
-                class="rounded-lg elevation-2" />
+              <v-img
+                :src="selectedExercise.gif"
+                :alt="`GIF de ${selectedExercise.name}`"
+                cover
+                height="300"
+                class="rounded-lg elevation-2"
+              />
             </v-col>
             <v-col cols="12" md="6">
               <h3 class="text-h6 mb-3">Informació de l'exercici</h3>
               <p class="text-body-1 mb-4">
                 {{ selectedExercise.description }}
               </p>
-              <v-divider class="my-3"></v-divider>
+              <v-divider class="my-3" />
               <div class="mb-3">
                 <h4 class="text-subtitle-1 font-weight-bold mb-1">Músculs implicats:</h4>
                 <p class="text-body-2">{{ selectedExercise.muscles }}</p>
@@ -237,7 +229,7 @@ const login = () => {
           </v-btn>
           <v-btn color="#FF6600" variant="flat" @click="confirmGoToLobby">
             <v-icon start>mdi-account-group</v-icon>
-            Comemçar exercici
+            Començar exercici
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -248,7 +240,8 @@ const login = () => {
 <style scoped>
 .exercise-card {
   border-radius: 16px;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;

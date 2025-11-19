@@ -10,7 +10,7 @@ interface Player {
   reps: number
   cals: number
   time: number
-  isReady: boolean // <-- AFEGIT
+  isReady: boolean
 }
 interface Room {
   id: string
@@ -34,7 +34,6 @@ const videoUrl = computed(() => route.query.video as string)
 // Dades de la sala
 const roomState = ref<Room | null>(null)
 const myId = computed(() => socket.id)
-const myNickname = ref(localStorage.getItem('userName') || 'Tu')
 
 // Estats calculats
 const isHost = computed(() => roomState.value?.hostId === myId.value)
@@ -47,22 +46,17 @@ onMounted(() => {
     socket.connect()
   }
 
-  // 1. Escuchar actualitzacions
   socket.on('session:roomUpdate', (room: Room) => {
     roomState.value = room
   })
 
-  // 2. Escuchar errors
   socket.on('session:error', (message: string) => {
     alert(`Error: ${message}`)
   })
 
-  // 3. Escuchar l'inici
   socket.on('session:start', (room: Room) => {
-    // Netejar listeners abans de marxar
     cleanupSocketListeners()
 
-    // Anem a l'exercici!
     router.push({
       name: 'Exercici',
       params: { id: exerciseId.value },
@@ -74,7 +68,6 @@ onMounted(() => {
     })
   })
 
-  // 4. Demanar l'estat actual (per si refresquem la pàgina)
   socket.emit('session:getState', sessionId.value)
 })
 
@@ -86,7 +79,6 @@ const cleanupSocketListeners = () => {
 
 onUnmounted(() => {
   cleanupSocketListeners()
-  // No marxem de la sala al sortir, el 'disconnect' ho gestionarà
 })
 
 // --- Accions de l'Usuari ---
@@ -107,7 +99,6 @@ const startSession = () => {
 }
 
 const leaveLobby = () => {
-  // En desconnectar, el server ens treurà de la sala
   socket.disconnect()
   router.push({
     name: 'SessioLobby',
@@ -119,6 +110,7 @@ const leaveLobby = () => {
   })
 }
 </script>
+
 
 <template>
   <v-app>

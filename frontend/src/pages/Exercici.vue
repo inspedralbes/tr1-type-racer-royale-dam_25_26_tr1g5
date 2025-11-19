@@ -60,7 +60,9 @@ const sessionId = ref((route.query.sessionId as string) || null)
 const isGroupSession = computed(() => !!sessionId.value)
 
 const roomState = ref<Room | null>(null)
-const myNickname = ref(localStorage.getItem('userName') || 'Tu')
+// const myNickname = ref(localStorage.getItem('userName') || 'Tu')
+const myNickname = ref('Convidat')
+
 
 const videoStream = ref<MediaStream | null>(null)
 const cameraElement = ref<HTMLVideoElement | null>(null)
