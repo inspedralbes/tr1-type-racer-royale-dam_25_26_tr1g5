@@ -149,7 +149,7 @@ const canInteract = computed(() => !loading.value)
     </v-overlay>
 
     <v-app-bar color="#FF6600" class="d-flex align-center justify-center" flat>
-      <a href="http://localhost:3000">
+      <a href="/">
         <div style="height: 128px; width: 128px;">
           <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
         </div>

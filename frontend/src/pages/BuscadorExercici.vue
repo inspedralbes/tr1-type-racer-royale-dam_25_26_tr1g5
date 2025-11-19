@@ -170,7 +170,7 @@ const login = () => {
 
     <v-footer color="#FF6600" class="text-center d-flex align-center justify-center" height="60"
       style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;">
-      <a href="http://localhost:3000">
+      <a href="/">
         <div style="height: 128px; width: 128px;">
           <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
         </div>

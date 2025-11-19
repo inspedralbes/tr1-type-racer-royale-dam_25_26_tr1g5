@@ -4,6 +4,7 @@ import { ref, computed, onMounted } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 // --- Llegim les dades com a 'ref' per accedir-hi fàcilment ---
 const reps = ref(Number(route.query.reps) || 0)
@@ -46,7 +47,7 @@ async function guardarResultats() {
   }
 
   try {
-    const response = await fetch('http://localhost:3001/api/resultats', {
+    const response = await fetch(`${API_BASE}/resultats`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ async function fetchGroupResults() {
   if (!token || !sessionId.value) return;
 
   try {
-    const response = await fetch(`http://localhost:3001/api/resultats/${sessionId.value}`, {
+    const response = await fetch(`${API_BASE}/resultats/${sessionId.value}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -193,7 +194,7 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
 <template>
   <v-app>
     <v-app-bar color="#FF6600" elevation="0">
-      <a href="http://localhost:3000">
+      <a href="/">
         <div style="height: 128px; width: 128px;">
           <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
         </div>

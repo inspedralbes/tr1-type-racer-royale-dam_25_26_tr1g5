@@ -4,7 +4,7 @@ type User = { id: number; nom: string; mail: string }
 type LoginResp = { token: string; user: User }
 type ApiErr = { error?: string; message?: string }
 
-const API = 'http://localhost:3001/api'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const jwt = ref<string | null>(null)
 const user = ref<User | null>(null)
 const loading = ref(false)

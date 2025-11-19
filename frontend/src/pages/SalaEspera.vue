@@ -123,7 +123,7 @@ const leaveLobby = () => {
 <template>
   <v-app>
     <v-app-bar color="#FF6600" elevation="0">
-      <a href="http://localhost:3000">
+      <a href="/">
         <div style="height: 128px; width: 128px;">
           <v-img src="/fitcamicon.png" alt="FitCam" contain height="128" width="128" />
         </div>
