@@ -6,14 +6,12 @@ const route = useRoute()
 const router = useRouter()
 
 // --- Llegim les dades com a 'ref' per accedir-hi fàcilment ---
-// S'ha eliminat la variable 'tecnica'
 const reps = ref(Number(route.query.reps) || 0)
 const temps = ref(Number(route.query.temps) || 0)
 const series = ref(Number(route.query.series) || 0)
 const nomExercici = ref((route.query.nom as string) || 'Sessió')
 const exerciseId = ref((route.query.id as string) || 'unknown') 
 const sessionId = ref((route.query.sessionId as string) || null)
-
 
 // --- Lògica de la Vista ---
 const isGroupSession = computed(() => !!sessionId.value)
@@ -28,9 +26,19 @@ interface RankingEntry {
 
 const classificacio = ref<RankingEntry[]>([]) 
 
-// --- Funció per guardar a la BD ---
+// --- Funció per guardar a la BD (CORREGIDA) ---
 async function guardarResultats() {
   const token = localStorage.getItem('fitcam_token');
+
+  // 1. EVITAR DUPLICATS PER REFRESC (F5)
+  // Creem una clau única per aquesta sessió i exercici específic
+  const saveKey = `fitcam_saved_${sessionId.value}_${exerciseId.value}_${reps.value}`;
+  
+  // Si ja existeix la clau, vol dir que ja hem guardat les dades en aquesta sessió de navegador
+  if (sessionStorage.getItem(saveKey)) {
+    console.log("Resultats ja guardats anteriorment. S'evita duplicat per refresh.");
+    return; 
+  }
 
   if (!token || (reps.value === 0 && series.value === 0)) {
     console.log("Sessió sense activitat suficient (0 reps i 0 series), no es guarda.");
@@ -46,7 +54,6 @@ async function guardarResultats() {
       },
       body: JSON.stringify({
         nomExercici: nomExercici.value,
-        // S'ha eliminat el camp tecnica
         reps: reps.value,
         series: series.value,
         temps: temps.value,
@@ -60,6 +67,10 @@ async function guardarResultats() {
     }
 
     const data = await response.json();
+    
+    // 2. MARCAR COM A GUARDAT
+    sessionStorage.setItem(saveKey, 'true');
+    
     console.log("Resultats guardats a la BD:", data.message);
 
   } catch (error) {
@@ -67,7 +78,7 @@ async function guardarResultats() {
   }
 }
 
-// --- Funció per OBTENIR resultats del grup ---
+// --- Funció per OBTENIR resultats del grup (CORREGIDA I FILTRADA) ---
 async function fetchGroupResults() {
   const token = localStorage.getItem('fitcam_token');
   if (!token || !sessionId.value) return;
@@ -85,13 +96,38 @@ async function fetchGroupResults() {
 
     const groupData: any[] = await response.json(); 
 
-    const formattedData = groupData.map(player => ({
-      nom: player.nickname === myNickname.value ? 'Tu' : player.nickname,
-      reps: player.reps || 0,
-      series: player.series || 0
-    }));
+    // 3. FILTRAR DUPLICATS VISUALS (Mantenir només el millor resultat per usuari)
+    const userMap = new Map();
 
-    // CORRECCIÓ: Ordenar per SÈRIES -> REPS (S'ha eliminat Tècnica)
+    groupData.forEach(player => {
+      // Normalitzem el nom per identificar l'usuari actual
+      const name = player.nickname === myNickname.value ? 'Tu' : player.nickname;
+      
+      const currentStats = { 
+        nom: name, 
+        reps: player.reps || 0, 
+        series: player.series || 0 
+      };
+
+      // Si l'usuari no està a la llista, l'afegim
+      if (!userMap.has(name)) {
+        userMap.set(name, currentStats);
+      } else {
+        // Si ja existeix, comprovem si el nou resultat és millor
+        const existing = userMap.get(name);
+        
+        // CRITERI: Més series guanya. Si empaten series, més reps guanya.
+        if (currentStats.series > existing.series || 
+           (currentStats.series === existing.series && currentStats.reps > existing.reps)) {
+          userMap.set(name, currentStats);
+        }
+      }
+    });
+
+    // Convertim el Map a Array net
+    const formattedData = Array.from(userMap.values()) as RankingEntry[];
+
+    // 4. ORDENAR (Ranking)
     formattedData.sort((a, b) => {
       if (b.series !== a.series) return b.series - a.series; // 1r: Sèries
       return b.reps - a.reps;                                // 2n: Repeticions
@@ -101,6 +137,7 @@ async function fetchGroupResults() {
 
   } catch (error) {
     console.error("Error al carregar resultats del grup:", error);
+    // Fallback si falla la xarxa
     classificacio.value = [{ 
       nom: 'Tu', 
       reps: reps.value, 
@@ -108,7 +145,6 @@ async function fetchGroupResults() {
     }];
   }
 }
-
 
 onMounted(() => {
   // 1. Comprovem el rècord de repeticions (local)
@@ -120,7 +156,7 @@ onMounted(() => {
     isNewPR.value = true
   }
 
-  // 2. Guardem els resultats a la BD
+  // 2. Guardem els resultats a la BD (amb protecció contra F5)
   guardarResultats();
 
   // 3. Si és grup, busquem el rànquing
@@ -145,15 +181,9 @@ const formatTime = (seconds: number): string => {
   return [minutes, secs].map(u => u.toString().padStart(2, '0')).join(':')
 }
 
-// S'ha eliminat la computed property 'feedbackTecnica'
-
 const posicioUsuari = computed(() => {
-  // Lògica d'ordenació idèntica a fetchGroupResults (sense tècnica)
-  const sorted = [...classificacio.value].sort((a, b) => {
-    if (b.series !== a.series) return b.series - a.series
-    return b.reps - a.reps
-  })
-  return sorted.findIndex(e => e.nom === 'Tu') + 1
+  // Utilitzem la classificacio ja neta i ordenada
+  return classificacio.value.findIndex(e => e.nom === 'Tu') + 1
 })
 
 const tornarInici = () => router.push({ name: 'Home' })
