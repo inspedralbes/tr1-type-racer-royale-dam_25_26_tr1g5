@@ -245,7 +245,7 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
 
               <template v-if="isGroupSession">
                 <v-divider class="my-4"></v-divider>
-                <h3 class="text-h6 font-weight-bold mb-3">Rànquing de la Sessió (Per Sèries)</h3>
+                <h3 class="text-h6 font-weight-bold mb-3">Rànquing de la Sessió</h3>
                 
                 <p v-if="classificacio.length > 0" class="text-body-1 mb-4">
                   La teva posició: <strong class="text-h6" style="color:#FF6600">#{{ posicioUsuari }}</strong>
