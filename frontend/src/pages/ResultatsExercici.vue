@@ -6,7 +6,7 @@ const route = useRoute()
 const router = useRouter()
 
 // --- Llegim les dades com a 'ref' per accedir-hi fàcilment ---
-const tecnica = ref(Number(route.query.tecnica) || 0)
+// S'ha eliminat la variable 'tecnica'
 const reps = ref(Number(route.query.reps) || 0)
 const temps = ref(Number(route.query.temps) || 0)
 const series = ref(Number(route.query.series) || 0)
@@ -22,7 +22,6 @@ const myNickname = ref(localStorage.getItem('userName') || 'Tu')
 
 interface RankingEntry {
   nom: string
-  tecnica: number
   reps: number
   series: number
 }
@@ -33,8 +32,6 @@ const classificacio = ref<RankingEntry[]>([])
 async function guardarResultats() {
   const token = localStorage.getItem('fitcam_token');
 
-  // CORRECCIÓN: Ahora guardamos si hay Reps O Series.
-  // Si solo entras y sales (0 reps y 0 series), no guardamos.
   if (!token || (reps.value === 0 && series.value === 0)) {
     console.log("Sessió sense activitat suficient (0 reps i 0 series), no es guarda.");
     return;
@@ -49,7 +46,7 @@ async function guardarResultats() {
       },
       body: JSON.stringify({
         nomExercici: nomExercici.value,
-        tecnica: tecnica.value,
+        // S'ha eliminat el camp tecnica
         reps: reps.value,
         series: series.value,
         temps: temps.value,
@@ -90,16 +87,14 @@ async function fetchGroupResults() {
 
     const formattedData = groupData.map(player => ({
       nom: player.nickname === myNickname.value ? 'Tu' : player.nickname,
-      tecnica: player.tecnica || 0,
       reps: player.reps || 0,
       series: player.series || 0
     }));
 
-    // CORRECCIÓN: Ordenar por SERIES -> REPS -> TÉCNICA
+    // CORRECCIÓ: Ordenar per SÈRIES -> REPS (S'ha eliminat Tècnica)
     formattedData.sort((a, b) => {
       if (b.series !== a.series) return b.series - a.series; // 1r: Sèries
-      if (b.reps !== a.reps) return b.reps - a.reps;         // 2n: Repeticions
-      return b.tecnica - a.tecnica;                          // 3r: Tècnica
+      return b.reps - a.reps;                                // 2n: Repeticions
     });
 
     classificacio.value = formattedData;
@@ -108,7 +103,6 @@ async function fetchGroupResults() {
     console.error("Error al carregar resultats del grup:", error);
     classificacio.value = [{ 
       nom: 'Tu', 
-      tecnica: tecnica.value, 
       reps: reps.value, 
       series: series.value 
     }];
@@ -135,7 +129,6 @@ onMounted(() => {
   } else {
     classificacio.value = [{ 
       nom: 'Tu', 
-      tecnica: tecnica.value, 
       reps: reps.value, 
       series: series.value 
     }];
@@ -152,19 +145,13 @@ const formatTime = (seconds: number): string => {
   return [minutes, secs].map(u => u.toString().padStart(2, '0')).join(':')
 }
 
-const feedbackTecnica = computed(() => {
-  if (tecnica.value >= 95) return "Execució perfecta. Has clavat la forma!"
-  if (tecnica.value >= 80) return "Molt bona feina! La teva forma és sòlida."
-  if (tecnica.value >= 60) return "Bon esforç. Centra't en mantenir la postura."
-  return "Continua practicant per corregir la forma."
-})
+// S'ha eliminat la computed property 'feedbackTecnica'
 
 const posicioUsuari = computed(() => {
-  // CORRECCIÓN: Lógica de ordenación idéntica a fetchGroupResults
+  // Lògica d'ordenació idèntica a fetchGroupResults (sense tècnica)
   const sorted = [...classificacio.value].sort((a, b) => {
     if (b.series !== a.series) return b.series - a.series
-    if (b.reps !== a.reps) return b.reps - a.reps
-    return b.tecnica - a.tecnica
+    return b.reps - a.reps
   })
   return sorted.findIndex(e => e.nom === 'Tu') + 1
 })
@@ -204,22 +191,6 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
                 Has superat la teva marca anterior de repeticions per a aquest exercici.
               </v-alert>
 
-              <v-row justify="center" class="mb-4">
-                <v-col cols="12">
-                  <div class="text-subtitle-1 mb-3">Precisió Tècnica Mitjana</div>
-                  <v-progress-circular :model-value="tecnica" :size="180" :width="16" color="#FF6600" class="mx-auto">
-                    <template v-slot:default>
-                      <span class="text-h3 font-weight-bold" style="color:#FF6600">
-                        {{ tecnica.toFixed(1) }}<span class="text-h5">%</span>
-                      </span>
-                    </template>
-                  </v-progress-circular>
-                  <p class="text-body-1 mt-4 mb-6 mx-auto" style="max-width: 500px;">
-                    {{ feedbackTecnica }}
-                  </p>
-                </v-col>
-              </v-row>
-
               <v-divider class="my-4"></v-divider>
 
               <v-row class="mb-4 text-center">
@@ -255,12 +226,12 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
                     <tr>
                       <th>Pos.</th>
                       <th>Nom</th>
-                      <th>Sèries</th> <th>Reps</th> <th>Tècnica</th>
-                    </tr>
+                      <th>Sèries</th> <th>Reps</th>
+                      </tr>
                   </thead>
                   <tbody>
                     <tr v-if="classificacio.length === 0">
-                      <td colspan="5">
+                      <td colspan="4">
                         <v-progress-circular indeterminate color="#FF6600" class="my-4"></v-progress-circular>
                         <p>Carregant resultats del grup...</p>
                       </td>
@@ -271,8 +242,7 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
                       <td>{{ row.nom }}</td>
                       <td>{{ row.series }}</td> 
                       <td>{{ row.reps }}</td>
-                      <td>{{ row.tecnica }}%</td>
-                    </tr>
+                      </tr>
                   </tbody>
                 </v-table>
               </template>
