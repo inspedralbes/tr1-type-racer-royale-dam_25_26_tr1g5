@@ -1,4 +1,4 @@
-// server.js (COMPLET AMB CORS, BD, AUTENTICACIÓ I NOU ENDPOINT)
+// server.js
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -12,345 +12,207 @@ const jwt = require('jsonwebtoken');
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// --- CONFIGURACIÓ DE LA BASE DE DADES ---
+// --- CONFIGURACIÓ BD (Asegúrate que DB_PASS coincide con tu Docker) ---
 const dbPool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS, // Nota: DB_PASS, no MYSQL_PASSWORD
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'fitcam',
+    password: process.env.DB_PASS || 'fitcampwd', 
+    database: process.env.DB_NAME || 'fitcam',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-// --- Claus secretes (millor en variables d'entorn) ---
-const JWT_SECRET = process.env.JWT_SECRET || 'UnaClauLlargaISecreta';
-// --- MIDDLEWARE D'EXPRESS ---
+const JWT_SECRET = process.env.JWT_SECRET || 'FitCamSecretKey123';
+
 app.use(cors({ origin: '*' })); 
 app.use(express.json()); 
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-// =======================================================
-// --- RUTES D'API PER AUTENTICACIÓ ---
-// =======================================================
-
-// POST /api/auth/register
-app.post('/api/auth/register', async (req, res) => {
-    const { nom, mail, password } = req.body;
-
-    if (!nom || !mail || !password) {
-        return res.status(400).json({ error: 'Tots els camps són obligatoris' });
-    }
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        const contrasenyaHashejada = await bcrypt.hash(password, salt);
-
-        const [result] = await dbPool.execute(
-            'INSERT INTO users (nom_usuari, email, contrasenya) VALUES (?, ?, ?)',
-            [nom, mail, contrasenyaHashejada]
-        );
-
-        console.log(`[REGISTRE] Usuari creat: ${nom} (ID: ${result.insertId})`);
-        res.status(201).json({ message: 'Usuari registrat correctament' });
-
-    } catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') {
-            console.warn(`[REGISTRE FALLIT] Correu o usuari duplicat: ${mail}`);
-            return res.status(409).json({ error: 'Aquest correu o nom d\'usuari ja existeix' });
-        }
-        
-        console.error('[ERROR REGISTRE]', error);
-        res.status(500).json({ error: 'Error intern del servidor' });
-    }
-});
-
-// POST /api/auth/login
-app.post('/api/auth/login', async (req, res) => {
-    const { mail, password } = req.body;
-
-    if (!mail || !password) {
-        return res.status(400).json({ error: 'Correu i contrasenya obligatoris' });
-    }
-
-    try {
-        const [rows] = await dbPool.execute('SELECT * FROM users WHERE email = ?', [mail]);
-        const user = rows[0];
-
-        if (!user) {
-            console.warn(`[LOGIN FALLIT] Usuari no trobat: ${mail}`);
-            return res.status(401).json({ error: 'Credencials incorrectes' });
-        }
-
-        const esCorrecta = await bcrypt.compare(password, user.contrasenya);
-
-        if (!esCorrecta) {
-            console.warn(`[LOGIN FALLIT] Contrasenya incorrecta per: ${mail}`);
-            return res.status(401).json({ error: 'Credencials incorrectes' });
-        }
-
-        const token = jwt.sign(
-            { id: user.id, nom: user.nom_usuari, email: user.email },
-            JWT_SECRET,
-            { expiresIn: '1h' } 
-        );
-
-        console.log(`[LOGIN OK] Usuari: ${user.nom_usuari}`);
-        res.json({
-            token,
-            user: {
-                id: user.id,
-                nom: user.nom_usuari,
-                email: user.email
-            }
-        });
-
-    } catch (error) {
-        console.error('[ERROR LOGIN]', error);
-        res.status(500).json({ error: 'Error intern del servidor' });
-    }
-});
-
-// =======================================================
-// --- NOU: MIDDLEWARE I RUTA PER RESULTATS ---
-// =======================================================
-
-// NOU: Middleware per verificar el Token
+// Middleware Auth
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Format: "Bearer TOKEN"
-  
-  if (token == null) {
-    return res.status(401).json({ error: 'Token no proporcionat' });
-  }
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.status(401).json({ error: 'Token no proporcionat' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token invàlid' });
-    }
-    req.user = user; // Afegeix { id, nom, email } a la request
+    if (err) return res.status(403).json({ error: 'Token invàlid' });
+    req.user = user;
     next();
   });
 }
 
-// NOU: Endpoint per guardar resultats
+// --- RUTAS API ---
+
+// LOGIN
+app.post('/api/auth/login', async (req, res) => {
+    const { mail, password } = req.body;
+    if (!mail || !password) return res.status(400).json({ error: 'Falten dades' });
+
+    try {
+        const [rows] = await dbPool.execute('SELECT * FROM users WHERE email = ?', [mail]);
+        const user = rows[0];
+        if (!user || !(await bcrypt.compare(password, user.contrasenya))) {
+            return res.status(401).json({ error: 'Credencials incorrectes' });
+        }
+        const token = jwt.sign({ id: user.id, nom: user.nom_usuari, email: user.email }, JWT_SECRET, { expiresIn: '2h' });
+        res.json({ token, user: { id: user.id, nom: user.nom_usuari, mail: user.email } });
+    } catch (error) {
+        res.status(500).json({ error: 'Error intern' });
+    }
+});
+
+// REGISTER
+app.post('/api/auth/register', async (req, res) => {
+    const { nom, mail, password } = req.body;
+    if (!nom || !mail || !password) return res.status(400).json({ error: 'Falten dades' });
+    try {
+        const hash = await bcrypt.hash(password, 10);
+        await dbPool.execute('INSERT INTO users (nom_usuari, email, contrasenya) VALUES (?, ?, ?)', [nom, mail, hash]);
+        res.status(201).json({ message: 'Usuari creat' });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Ja existeix' });
+        res.status(500).json({ error: 'Error intern' });
+    }
+});
+
+// POST RESULTATS (Guarda aunque reps sea 0, si hay series)
 app.post('/api/resultats', authenticateToken, async (req, res) => {
   try {
-    // 1. Aconseguim l'ID de l'usuari (des del token)
-    const userId = req.user.id; 
+    const userId = req.user.id;
+    const { nomExercici, tecnica, reps, series, temps, sessionId } = req.body;
 
-    // 2. Aconseguim les dades del frontend
-    const { 
-      nomExercici, // p.ex: "Sentadilla amb barra"
-      tecnica, 
-      reps, 
-      series, 
-      temps, 
-      sessionId 
-    } = req.body;
+    const [rows] = await dbPool.execute('SELECT id FROM exercicis WHERE nom_exercici = ?', [nomExercici]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Exercici no trobat' });
+    const exerciciId = rows[0].id;
 
-    // 3. Busquem l'ID (INT) de l'exercici a la BD usant el seu nom
-    const [rows] = await dbPool.execute(
-      'SELECT id FROM exercicis WHERE nom_exercici = ?', 
-      [nomExercici]
-    );
-
-    if (rows.length === 0) {
-      console.warn(`[RESULTATS] Exercici no trobat a la BD: ${nomExercici}`);
-      return res.status(404).json({ error: 'Exercici no trobat' });
-    }
-    const exerciciIdInt = rows[0].id; // Aquest és l'INT que necessita la BD
-
-    // 4. Creem la consulta SQL
     const sql = `
       INSERT INTO resultats 
-        (user_id, exercici_id, tecnica, repeticions, series, temps_segons, session_grup_id)
-      VALUES 
-        (?, ?, ?, ?, ?, ?, ?)
+        (user_id, exercici_id, tecnica, repeticions, series, temps_segons, session_grup_id, pes_levantat, data_resultat)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, CURDATE())
     `;
     
-    const params = [
-      userId,
-      exerciciIdInt,
-      tecnica,
-      reps,
-      series,
-      temps,
-      sessionId
-    ];
+    await dbPool.execute(sql, [
+      userId, exerciciId, tecnica || 0, reps || 0, series || 0, temps || 0, sessionId || null
+    ]);
 
-    // 5. Executem la consulta
-    await dbPool.execute(sql, params); 
-
-    console.log(`[RESULTATS] Guardats per a user ${userId} (Exercici ID: ${exerciciIdInt})`);
-    res.status(201).json({ message: 'Resultats guardats correctament' });
-
+    res.status(201).json({ message: 'Resultats guardats' });
   } catch (error) {
-    console.error('Error al guardar resultats a la BD:', error);
-    res.status(500).json({ error: 'Error intern del servidor' });
+    console.error('Error guardant:', error);
+    res.status(500).json({ error: 'Error DB' });
   }
 });
 
+// GET RÁNQUING (CORREGIDO: Ordenar por SERIES primero)
+app.get('/api/resultats/:sessionId', authenticateToken, async (req, res) => {
+    const { sessionId } = req.params;
+    if (!sessionId || sessionId === 'null') return res.json([]);
 
-// =======================================================
-// --- CODI DE SOCKET.IO ---
-// =======================================================
-const io = new Server(httpServer, {
-    cors: {
-        origin: '*', 
-        methods: ['GET', 'POST']
+    try {
+        const sql = `
+            SELECT 
+                u.nom_usuari as nickname, 
+                r.tecnica, 
+                r.repeticions as reps, 
+                r.series,
+                r.temps_segons as time
+            FROM resultats r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.session_grup_id = ?
+            ORDER BY r.series DESC, r.repeticions DESC, r.tecnica DESC
+        `;
+        const [rows] = await dbPool.execute(sql, [sessionId]);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error rànquing:', error);
+        res.status(500).json({ error: 'Error al llegir rànquing' });
     }
 });
 
+// --- SOCKET.IO ---
+const io = new Server(httpServer, { cors: { origin: '*' } });
 let sessions = {};
 let roomDetails = {};
 
 function generateUniqueCode() {
     let code;
-    do {
-        code = Math.floor(100000 + Math.random() * 900000).toString();
-    } while (roomDetails[code]);
+    do { code = Math.floor(100000 + Math.random() * 900000).toString(); } while (roomDetails[code]);
     return code;
 }
-
 function getPublicRooms(exerciseId) {
     return (sessions[exerciseId] || []).filter(room => !room.isPrivate);
 }
 
 io.on('connection', (socket) => {
-    console.log(`[CONEXIÓ] Usuari connectat: ${socket.id}`);
-
-    socket.on('session:requestList', (exerciseId) => {
-        socket.emit('session:list', getPublicRooms(exerciseId));
-    });
-
-    socket.on('session:create', (data) => {
-        const { exerciseId, exerciseName, hostName, isPrivate = false } = data;
-        
+    socket.on('session:requestList', (id) => socket.emit('session:list', getPublicRooms(id)));
+    
+    socket.on('session:create', ({ exerciseId, exerciseName, hostName, isPrivate }) => {
+        const roomId = generateUniqueCode();
         const newRoom = {
-            id: generateUniqueCode(),
-            exerciseId: exerciseId,
-            exerciseName: exerciseName,
-            hostId: socket.id,
-            isPrivate: isPrivate,
-            players: [
-                { id: socket.id, nickname: hostName, reps: 0, cals: 0, time: 0, isReady: false }
-            ]
+            id: roomId, exerciseId, exerciseName, hostId: socket.id, isPrivate,
+            players: [{ id: socket.id, nickname: hostName, reps: 0, cals: 0, time: 0, isReady: false }]
         };
-
         if (!sessions[exerciseId]) sessions[exerciseId] = [];
-        
         sessions[exerciseId].push(newRoom);
-        roomDetails[newRoom.id] = newRoom;
-        
-        socket.join(newRoom.id);
+        roomDetails[roomId] = newRoom;
+        socket.join(roomId);
         socket.emit('session:joined', newRoom);
         io.emit('session:list', getPublicRooms(exerciseId));
-        
-        console.log(`[SALA CREADA] Exercici: ${exerciseId}, Codi: ${newRoom.id}, Privada: ${isPrivate}`);
     });
 
-    socket.on('session:join', (data) => {
-        const { roomId, nickname } = data;
+    socket.on('session:join', ({ roomId, nickname }) => {
         const room = roomDetails[roomId];
-
-        if (!room) return socket.emit('session:error', 'La sala no existeix.');
-        if (room.players.length >= 4) return socket.emit('session:error', 'La sala està plena.');
-
-        const newPlayer = { id: socket.id, nickname: nickname, reps: 0, cals: 0, time: 0, isReady: false };
-        room.players.push(newPlayer);
-        
-        socket.join(room.id);
+        if (!room || room.players.length >= 4) return socket.emit('session:error', 'Error al unirse');
+        room.players.push({ id: socket.id, nickname, reps: 0, cals: 0, time: 0, isReady: false });
+        socket.join(roomId);
         socket.emit('session:joined', room);
-        io.to(room.id).emit('session:roomUpdate', room);
-        console.log(`[SALA UNIDA] Codi: ${roomId}, Usuari: ${nickname}`);
+        io.to(roomId).emit('session:roomUpdate', room);
     });
 
-    socket.on('session:setReady', (data) => {
-        const { roomId, isReady } = data;
-        const room = roomDetails[roomId];
-        if (!room) return;
-
-        const player = room.players.find(p => p.id === socket.id);
-        if (player) {
-            player.isReady = !!isReady; 
-            io.to(room.id).emit('session:roomUpdate', room);
-            console.log(`[ESTAT CANVIAT] Codi: ${roomId}, Usuari: ${player.nickname}, Llest: ${player.isReady}`);
-        }
-    });
-
-    socket.on('session:requestStart', (data) => {
-        const { roomId } = data;
-        const room = roomDetails[roomId];
-        if (!room) return socket.emit('session:error', 'La sala no existeix.');
-
-        if (socket.id !== room.hostId) {
-            return socket.emit('session:error', 'Només el host pot iniciar la sessió.');
-        }
-
-        const allReady = room.players.every(p => p.isReady === true);
-        if (!allReady) {
-            return socket.emit('session:error', 'No tots els jugadors estan a punt.');
-        }
-
-        console.log(`[SESSIÓ INICIADA] Codi: ${roomId}`);
-        io.to(room.id).emit('session:start', room);
-    });
-
-    socket.on('exercise:updateStats', (data) => {
-        const { roomId, reps, cals, time } = data;
-        const room = roomDetails[roomId];
-        if (!room) return;
-        
-        const player = room.players.find(p => p.id === socket.id);
-        if (player) {
-            player.reps = reps;
-            player.cals = cals;
-            player.time = time;
-            io.to(room.id).emit('session:roomUpdate', room);
-        }
-    });
-    
-    socket.on('session:getState', (roomId) => {
+    socket.on('session:setReady', ({ roomId, isReady }) => {
         const room = roomDetails[roomId];
         if (room) {
-            if (room.players.some(p => p.id === socket.id)) {
-                socket.emit('session:roomUpdate', room);
+            const p = room.players.find(p => p.id === socket.id);
+            if (p) { p.isReady = isReady; io.to(roomId).emit('session:roomUpdate', room); }
+        }
+    });
+
+    socket.on('session:requestStart', ({ roomId }) => {
+        const room = roomDetails[roomId];
+        if (room && socket.id === room.hostId && room.players.every(p => p.isReady)) {
+            io.to(roomId).emit('session:start', room);
+        }
+    });
+
+    socket.on('exercise:updateStats', ({ roomId, reps, cals, time }) => {
+        const room = roomDetails[roomId];
+        if (room) {
+            const p = room.players.find(p => p.id === socket.id);
+            if (p) { 
+                p.reps = reps; p.cals = cals; p.time = time; 
+                io.to(roomId).emit('session:roomUpdate', room); 
             }
         }
     });
 
     socket.on('disconnect', () => {
-        console.log(`[DESCONNEXIÓ] Usuari: ${socket.id}`);
-        for (const roomId in roomDetails) {
-            const room = roomDetails[roomId];
-            const playerIndex = room.players.findIndex(p => p.id === socket.id);
-
-            if (playerIndex > -1) {
-                const exerciseId = room.exerciseId;
-                room.players.splice(playerIndex, 1);
-                
+        for (const rId in roomDetails) {
+            const room = roomDetails[rId];
+            const idx = room.players.findIndex(p => p.id === socket.id);
+            if (idx !== -1) {
+                room.players.splice(idx, 1);
                 if (room.players.length === 0) {
-                    delete roomDetails[roomId];
-                    if (sessions[exerciseId]) {
-                        sessions[exerciseId] = sessions[exerciseId].filter(r => r.id !== roomId);
-                    }
-                    console.log(`[SALA ELIMINADA] Codi: ${roomId} (buida)`);
+                    delete roomDetails[rId];
+                    if (sessions[room.exerciseId]) sessions[room.exerciseId] = sessions[room.exerciseId].filter(r => r.id !== rId);
                 } else {
-                    if (room.hostId === socket.id) {
-                        room.hostId = room.players[0].id;
-                    }
-                    io.to(room.id).emit('session:roomUpdate', room);
+                    if (room.hostId === socket.id) room.hostId = room.players[0].id;
+                    io.to(rId).emit('session:roomUpdate', room);
                 }
-                
-                io.emit('session:list', getPublicRooms(exerciseId));
+                io.emit('session:list', getPublicRooms(room.exerciseId));
                 break;
             }
         }
     });
 });
 
-httpServer.listen(PORT, () => {
-    console.log(`Servidor API i Socket.IO corrent a http://localhost:${PORT}`);
-});
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
