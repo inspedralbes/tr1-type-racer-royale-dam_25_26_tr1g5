@@ -145,7 +145,6 @@ const login = () => {
 <template>
   <v-app>
    <NavBar/>
-
     <v-main>
       <v-container class="py-8" fluid>
         <v-row justify="center" class="mb-8">
@@ -177,6 +176,8 @@ const login = () => {
         </div>
       </a>
     </v-footer>
+
+    <!-- Login -->
 
     <v-dialog v-model="loginDialog" max-width="400">
       <v-card>

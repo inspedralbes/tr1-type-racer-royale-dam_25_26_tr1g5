@@ -6,7 +6,7 @@ import type { Socket } from 'socket.io-client'
 interface Player {
   id: string
   nickname: string
-  reps: number
+  reps: number // Series
   time: number
 }
 interface Room {
@@ -18,156 +18,177 @@ interface Room {
 }
 
 const route = useRoute()
-// Ajuste aquí para que los videos busquen en la carpeta public/videos
-// --- CAMBIO: Ruta segura y manejo de errores ---
 
+// ===========================================
+// FIX: Lógica para determinar la URL del GIF
+// ===========================================
 const videoUrl = computed(() => {
-  const videoFile = route.query.video as string
-  // Asegura que busca en la carpeta public/videos/
-  return videoFile ? `/videos/${videoFile}` : '/videos/Download.mp4'
+  // 1. Obtenemos el nombre y lo pasamos a minúsculas para facilitar la búsqueda
+  const rawName = (route.query.name as string || '').toLowerCase()
+
+  // 2. Mapa de "Palabra Clave" -> "Nombre exacto del archivo GIF"
+  const fileMap: Record<string, string> = {
+    'sentadilla': 'sentadillaconbarra',
+    'banca': 'pressbanca',
+    'militar': 'pressmilitar',
+    'pes-mort': 'pesomuerto',
+    'remo': 'remoconbarra',
+    'lateral': 'elevacioneslaterales',
+    'biceps': 'curlbicepsconbarra',
+    'bíceps': 'curlbicepsconbarra',
+    'triceps': 'extensiontricepsenpolea',
+    'tríceps': 'extensiontricepsenpolea'
+  }
+
+  // 3. Buscamos si alguna clave está contenida en el nombre del ejercicio
+  for (const key in fileMap) {
+    if (rawName.includes(key)) {
+      return `/videos/${fileMap[key]}.gif`
+    }
+  }
 })
 
-const videoError = ref(false)
-const handleVideoError = () => {
-  console.error(`Error cargando video: ${videoUrl.value}`)
-  videoError.value = true
-}
+
 const router = useRouter()
-const socket = inject('socket') as Socket 
+const socket = inject('socket') as Socket
 
-const exerciseName = (route.query.name as string) || 'Exercici' 
-const sessionId = ref((route.query.sessionId as string) || null) 
-const isGroupSession = computed(() => !!sessionId.value) 
+// ===========================================
+// FIX: exerciseName como propiedad computed
+// ===========================================
+const exerciseName = computed(() => (route.query.name as string) || 'Exercici')
+const sessionId = ref((route.query.sessionId as string) || null)
+const isGroupSession = computed(() => !!sessionId.value)
 
-const roomState = ref<Room | null>(null) 
-const myNickname = ref(localStorage.getItem('userName') || 'Tu') 
+const roomState = ref<Room | null>(null)
+const myNickname = ref(localStorage.getItem('userName') || 'Tu')
 
-const videoStream = ref<MediaStream | null>(null) 
-const cameraElement = ref<HTMLVideoElement | null>(null) 
-const cameraError = ref(false) 
+const videoStream = ref<MediaStream | null>(null)
+const cameraElement = ref<HTMLVideoElement | null>(null)
+const cameraError = ref(false)
 
 const exerciseCount = ref(1) // Contador de les series
-const sessionTime = ref(0) 
-const isTimerRunning = ref(false) 
-let intervalId: number | null = null 
+const sessionTime = ref(0)
+const isTimerRunning = ref(false)
+let intervalId: number | null = null
 
-const repetitionCount = ref(0) 
+const repetitionCount = ref(0)
 
 // Variable para controlar el Pop-up del video
 const showVideoDialog = ref(false)
 
-const setupSocketListeners = () => { 
-  socket.on('session:roomUpdate', (room: Room) => { 
-    roomState.value = room 
+const setupSocketListeners = () => {
+  socket.on('session:roomUpdate', (room: Room) => {
+    roomState.value = room
   })
 
-  socket.on('session:error', (message: string) => { 
-    alert(`Error de sessió: ${message}. Tornant al lobby...`) 
+  socket.on('session:error', (message: string) => {
+    alert(`Error de sessió: ${message}. Tornant al lobby...`)
   })
 
   socket.on('session:ended', () => {
     console.log("Rebut 'session:ended' del servidor.");
-    if (router.currentRoute.value.name === 'Exercici') { 
+    if (router.currentRoute.value.name === 'Exercici') {
       // Passem 'false' per no tornar a emetre l'event
-      finalitzarSessio(false); 
+      finalitzarSessio(false);
     }
   });
 
-  socket.emit('session:getState', sessionId.value) 
+  socket.emit('session:getState', sessionId.value)
 }
 
-onMounted(async () => { 
+onMounted(async () => {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }) 
-    videoStream.value = stream 
-    if (cameraElement.value) cameraElement.value.srcObject = stream 
-    cameraError.value = false 
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    videoStream.value = stream
+    if (cameraElement.value) cameraElement.value.srcObject = stream
+    cameraError.value = false
   } catch (error) {
-    console.error('Error al accedir a la càmera:', error) 
-    cameraError.value = true 
+    console.error('Error al accedir a la càmera:', error)
+    cameraError.value = true
   }
 
-  if (isGroupSession.value) { 
-    if (socket.connected) { 
-      setupSocketListeners() 
+  if (isGroupSession.value) {
+    if (socket.connected) {
+      setupSocketListeners()
     } else {
       socket.on('connect', setupSocketListeners)
     }
   }
 })
 
-onUnmounted(() => { 
-  videoStream.value?.getTracks().forEach(track => track.stop()) 
-  if (intervalId !== null) clearInterval(intervalId) 
+onUnmounted(() => {
+  videoStream.value?.getTracks().forEach(track => track.stop())
+  if (intervalId !== null) clearInterval(intervalId)
 
-  if (isGroupSession.value) { 
-    socket.off('session:roomUpdate') 
-    socket.off('session:error') 
-    socket.off('connect') 
-    socket.off('session:ended') 
+  if (isGroupSession.value) {
+    socket.off('session:roomUpdate')
+    socket.off('session:error')
+    socket.off('connect')
+    socket.off('session:ended')
   }
 })
 
-const formatTime = (seconds: number): string => { 
-  const hours = Math.floor(seconds / 3600) 
-  const minutes = Math.floor((seconds % 3600) / 60) 
-  const secs = seconds % 60 
-  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':') 
+const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+  return [hours, minutes, secs].map(u => u.toString().padStart(2, '0')).join(':')
 }
 
-const broadcastStats = () => { 
-  if (isGroupSession.value && sessionId.value && socket.connected) { 
-    socket.emit('exercise:updateStats', { 
-      roomId: sessionId.value, 
-      reps: exerciseCount.value, 
-      time: sessionTime.value 
+const broadcastStats = () => {
+  if (isGroupSession.value && sessionId.value && socket.connected) {
+    socket.emit('exercise:updateStats', {
+      roomId: sessionId.value,
+      reps: exerciseCount.value,
+      time: sessionTime.value
     })
   }
 }
 
-const handleSquatRep = () => { 
-  repetitionCount.value++ 
-  broadcastStats() 
+const handleSquatRep = () => {
+  repetitionCount.value++
+  broadcastStats()
 }
 
-const incrementExercises = () => { 
-  exerciseCount.value++ 
-  broadcastStats() 
+const incrementExercises = () => {
+  exerciseCount.value++
+  broadcastStats()
 }
 
-const startTimer = () => { 
-  if (isTimerRunning.value) return 
-  isTimerRunning.value = true 
-  intervalId = window.setInterval(() => { 
-    sessionTime.value++ 
-    broadcastStats() 
+const startTimer = () => {
+  if (isTimerRunning.value) return
+  isTimerRunning.value = true
+  intervalId = window.setInterval(() => {
+    sessionTime.value++
+    broadcastStats()
   }, 1000)
 }
 
-const pauseTimer = () => { 
-  if (!isTimerRunning.value) return 
-  isTimerRunning.value = false 
-  if (intervalId !== null) { 
-    clearInterval(intervalId) 
-    intervalId = null 
+const pauseTimer = () => {
+  if (!isTimerRunning.value) return
+  isTimerRunning.value = false
+  if (intervalId !== null) {
+    clearInterval(intervalId)
+    intervalId = null
   }
-  broadcastStats() 
+  broadcastStats()
 }
 
 const toggleTimer = () => {
   isTimerRunning.value ? pauseTimer() : startTimer()
 }
 
-const goBack = () => { 
-  if (isGroupSession.value) { 
-    router.push({ name: 'SessioLobby', params: { exerciseId: route.params.id }, query: { name: exerciseName } })
+const goBack = () => {
+  if (isGroupSession.value) {
+    // Aquí usamos route.query.name, no exerciseName, porque es lo que espera el lobby si no se usa ID
+    router.push({ name: 'SessioLobby', params: { exerciseId: route.params.id }, query: { name: route.query.name } })
   } else {
-    router.push({ name: 'BuscadorExercici' }) 
+    router.push({ name: 'BuscadorExercici' })
   }
 }
 
-const finalitzarSessio = (potEmetreEvent = true) => { 
-  pauseTimer() 
+const finalitzarSessio = (potEmetreEvent = true) => {
+  pauseTimer()
 
   if (potEmetreEvent && isGroupSession.value && roomState.value && roomState.value.hostId === socket.id) {
     console.log("Host finalitzant la sessió per a tothom.");
@@ -180,14 +201,14 @@ const finalitzarSessio = (potEmetreEvent = true) => {
     participantsNames = roomState.value.players.map(p => p.nickname).join(',');
   }
 
-  router.push({ 
+  router.push({
     name: 'ResultatsExercici',
     query: {
-      tecnica: (Math.random() * 100).toFixed(1), 
+      tecnica: (Math.random() * 100).toFixed(1),
       reps: repetitionCount.value,
       temps: sessionTime.value,
       series: exerciseCount.value,
-      nom: exerciseName,
+      nom: exerciseName.value, // Usamos .value porque ahora es computed
       id: route.params.id as string,
       sessionId: sessionId.value,
       participants: participantsNames // Passem la llista
@@ -196,9 +217,9 @@ const finalitzarSessio = (potEmetreEvent = true) => {
 }
 
 const isFullScreen = ref(false)
-const isVideoFullScreen = ref(false) 
-const toggleFullScreen = () => isFullScreen.value = !isFullScreen.value 
-const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen.value
+const isVideoFullScreen = ref(false)
+const toggleFullScreen = () => isFullScreen.value = !isFullScreen.value
+// toggleVideoFullScreen no es necesaria si solo abrimos un dialog
 
 </script>
 
@@ -224,7 +245,8 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 
           <v-col cols="12">
             <v-card :class="isFullScreen ? 'camera-fullscreen' : 'camera-card'" elevation="1">
-              <v-card-title class="text-h6 bg-grey-darken-3 text-white d-flex align-center justify-center justify-sm-start">
+              <v-card-title
+                class="text-h6 bg-grey-darken-3 text-white d-flex align-center justify-center justify-sm-start">
                 <v-icon class="me-sm-5">mdi-camera</v-icon>
                 <span class="d-none d-sm-inline">La teva càmera</span>
                 <v-spacer />
@@ -232,9 +254,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
                   <v-icon>mdi-fullscreen-exit</v-icon>
                 </v-btn>
               </v-card-title>
-              
 
-              <!-- Aixo es la part del Full Screen -->
 
               <v-card-text class="pa-0 camera-container">
                 <pose-squad v-if="!isFullScreen" @squat-completed="handleSquatRep" />
@@ -242,7 +262,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
                   <div class="grid-item camera-middle d-flex flex-column align-center justify-center">
                     <pose-squad @squat-completed="handleSquatRep" style="width: 100%; height: 100%;" />
                     <div class="overlay-reps-counter">
-                      <div class="overlay-label">Repeticiones</div>
+                      <div class="overlay-label">Repeticions</div>
                       <div class="overlay-value">{{ repetitionCount }}</div>
                     </div>
                   </div>
@@ -251,8 +271,8 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
                     <h4 class="text-h6 mb-3 font-weight-bold">{{ isGroupSession ? 'Estadístiques del Grup' : 'Sessió Individual' }}</h4>
                     <div v-if="isGroupSession && roomState" class="player-stats-list">
                       <v-card v-for="player in roomState.players" :key="player.id"
-                        :color="player.nickname === myNickname ? 'orange-lighten-5' : 'grey-lighten-4'"
-                        flat border class="mb-2 player-stat-card">
+                        :color="player.nickname === myNickname ? 'orange-lighten-5' : 'grey-lighten-4'" flat border
+                        class="mb-2 player-stat-card">
                         <v-card-title class="text-subtitle-2 font-weight-bold pa-2">
                           <v-icon :color="roomState.hostId === player.id ? 'amber' : 'grey'" left size="small">
                             {{ roomState.hostId === player.id ? 'mdi-crown' : 'mdi-account' }}
@@ -275,22 +295,17 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
                       <div class="overlay-label">Temps</div>
                     </div>
                     <div class="overlay-stat-item text-center">
-                        <v-btn 
-                            :color="isTimerRunning ? 'warning' : 'success'" 
-                            variant="flat" 
-                            size="large" 
-                            @click="toggleTimer"
-                            class="mb-2"
-                            style="pointer-events: all;"
-                        >
-                            <v-icon class="me-2">{{ isTimerRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
-                            {{ isTimerRunning ? 'Pausar' : 'Iniciar' }}
-                        </v-btn>
+                      <v-btn :color="isTimerRunning ? 'warning' : 'success'" variant="flat" size="large"
+                        @click="toggleTimer" class="mb-2" style="pointer-events: all;">
+                        <v-icon class="me-2">{{ isTimerRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+                        {{ isTimerRunning ? 'Pausar' : 'Iniciar' }}
+                      </v-btn>
                     </div>
                     <div class="overlay-stat-item text-center d-flex flex-column align-center">
                       <div class="overlay-value">{{ exerciseCount }}</div>
                       <div class="overlay-label">Series</div>
-                      <v-btn color="#FF6600" variant="flat" size="small" @click="incrementExercises" class="mt-2" style="pointer-events: all; color: white !important; min-width: 40px;">
+                      <v-btn color="#FF6600" variant="flat" size="small" @click="incrementExercises" class="mt-2"
+                        style="pointer-events: all; color: white !important; min-width: 40px;">
                         <v-icon>mdi-plus</v-icon>
                       </v-btn>
                     </div>
@@ -303,7 +318,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
             </v-card>
           </v-col>
         </v-row>
-        
+
         <v-row v-if="isGroupSession && roomState" class="mt-4">
           <v-col cols="12">
             <v-card class="pa-4" elevation="3">
@@ -336,7 +351,8 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
                 <div class="stat-value text-h5 font-weight-bold mb-2">{{ formatTime(sessionTime) }}</div>
                 <div class="stat-label text-body-1 mb-4">Temps de Sessió</div>
                 <div class="timer-buttons">
-                  <v-btn :color="isTimerRunning ? 'warning' : 'success'" variant="flat" @click="toggleTimer" size="small">
+                  <v-btn :color="isTimerRunning ? 'warning' : 'success'" variant="flat" @click="toggleTimer"
+                    size="small">
                     <v-icon class="me-1">{{ isTimerRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
                     {{ isTimerRunning ? 'Pausar' : 'Iniciar' }}
                   </v-btn>
@@ -346,7 +362,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
           </v-col>
           <v-col cols="4" class="d-flex flex-column align-center justify-center">
             <v-btn color="#FF6600" size="large" variant="flat" class="mb-2" @click="showVideoDialog = true">
-              <v-icon class="me-2">mdi-play-circle</v-icon> Video del exercici
+              <v-icon class="me-2">mdi-play-circle</v-icon> Demostració del exercici
             </v-btn>
             <v-btn color="#FF6600" size="large" variant="flat" @click="finalitzarSessio()">
               <v-icon class="me-2">mdi-flag-checkered</v-icon> Finalitzar Sessió
@@ -357,32 +373,28 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
               <v-card-text class="text-center pa-6">
                 <div class="stat-icon mb-3"><v-icon size="32" color="#FF6600">mdi-weight-lifter</v-icon></div>
                 <div class="stat-value text-h5 font-weight-bold mb-2">{{ exerciseCount }}</div>
-                <div class="stat-label text-body-1 mb-4">Series Completades</div>
+                <div class="stat-label text-body-1 mb-4">Series</div>
                 <v-btn color="#FF6600" variant="flat" block class="py-2 text-body-2" @click="incrementExercises">
-                  <v-icon>mdi-plus</v-icon> Series
+                  <v-icon>mdi-plus</v-icon> Afegir Sèrie
                 </v-btn>
               </v-card-text>
             </v-card>
           </v-col>
         </v-row>
 
-        <v-dialog v-model="showVideoDialog" max-width="800px">
+        <v-dialog v-model="showVideoDialog" max-width="800px" z-index="20000">
           <v-card>
             <v-card-title class="d-flex justify-space-between align-center bg-grey-darken-3 text-white">
-              <span class="text-h6">Video: {{ exerciseName }}</span>
+              <span class="text-h6">Demostració: {{ exerciseName }}</span>
               <v-btn icon="mdi-close" variant="text" @click="showVideoDialog = false"></v-btn>
             </v-card-title>
 
-            <v-card-text class="pa-0 bg-black d-flex justify-center align-center">
-              <video 
-                controls 
-                autoplay 
-                loop 
-                style="width: 100%; max-height: 80vh; object-fit: contain;"
+            <v-card-text class="pa-0 bg-black d-flex justify-center align-center" style="min-height: 300px;">
+              <img 
                 :src="videoUrl"
-              >
-                El teu navegador no suporta el reproductor de video.
-              </video>
+                alt="Animació de l'exercici"
+                style="width: 100%; max-height: 80vh; object-fit: contain;"
+              />
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -398,19 +410,24 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 .camera-card {
   border-radius: 12px;
   overflow: hidden;
-  position: relative; /* Añadido para posicionar el botón de fullscreen */
+  position: relative;
+  /* Añadido para posicionar el botón de fullscreen */
 }
 
 /* Contenedores de video y cámara para posicionar el botón */
 .video-player-container,
 .camera-container {
   position: relative;
-  min-height: 415px; /* Asegura un alto mínimo si no hay contenido */
+  min-height: 415px;
+  /* Asegura un alto mínimo si no hay contenido */
   background: #000;
   height: 100%;
-  display: flex; /* Añadido para que el contenido dentro se ajuste bien */
-  align-items: center; /* Centra el contenido verticalmente */
-  justify-content: center; /* Centra el contenido horizontalmente */
+  display: flex;
+  /* Añadido para que el contenido dentro se ajuste bien */
+  align-items: center;
+  /* Centra el contenido verticalmente */
+  justify-content: center;
+  /* Centra el contenido horizontalmente */
 }
 
 .video-player {
@@ -421,7 +438,8 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   display: block;
 }
 
-.camera-player { /* Este estilo parece no usarse directamente en el template actual, pero lo mantengo */
+.camera-player {
+  /* Este estilo parece no usarse directamente en el template actual, pero lo mantengo */
   width: 100%;
   height: 415px;
   object-fit: contain;
@@ -451,7 +469,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 }
 
 .stat-icon {
- display: flex;
+  display: flex;
   justify-content: center;
   align-items: center;
 }
@@ -485,12 +503,14 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 
 .v-card-text div {
   line-height: 1.6;
-/* Estilos de fullscreen para video */
+  /* Estilos de fullscreen para video */
 }
+
 .fullscreen-card {
   position: fixed;
-  top: 0; /* Ajustado para empezar desde arriba */
-   left: 0;
+  top: 0;
+  /* Ajustado para empezar desde arriba */
+  left: 0;
   right: 0;
   bottom: 0;
   z-index: 9999;
@@ -501,26 +521,35 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 }
 
 .fullscreen-card .v-card-title {
-  flex-shrink: 0; /* Asegura que el título no se encoja */
+  flex-shrink: 0;
+  /* Asegura que el título no se encoja */
 }
+
 .fullscreen-card .v-card-text {
-  flex-grow: 1; /* Permite que el contenido ocupe el espacio restante */
-  height: auto; /* Anula la altura fija si la hubiera */
+  flex-grow: 1;
+  /* Permite que el contenido ocupe el espacio restante */
+  height: auto;
+  /* Anula la altura fija si la hubiera */
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .fullscreen-card .v-card-text {
-  flex-grow: 1; /* Permite que el contenido ocupe el espacio restante */
-  height: auto; /* Anula la altura fija si la hubiera */
+  flex-grow: 1;
+  /* Permite que el contenido ocupe el espacio restante */
+  height: auto;
+  /* Anula la altura fija si la hubiera */
   flex-grow: 1;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .fullscreen-card .video-player {
   width: 100%;
-  height: 100%; /* El video/cámara ocupa todo el espacio disponible */
+  height: 100%;
+  /* El video/cámara ocupa todo el espacio disponible */
   object-fit: contain;
 }
 
@@ -531,14 +560,17 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   color: white;
   background-color: rgba(0, 0, 0, 0.5);
   border-radius: 50%;
-  z-index: 10; /* Asegura que esté por encima del contenido */
+  z-index: 10;
+  /* Asegura que esté por encima del contenido */
 }
+
 /* -------------------------------- */
 
 /* --- [NOU] ESTILS PER A CAMERA FULLSCREEN --- */
 .camera-fullscreen {
   position: fixed;
-  top: 64px; /* Per deixar espai a la v-app-bar */
+  top: 64px;
+  /* Per deixar espai a la v-app-bar */
   left: 0;
   right: 0;
   bottom: 0;
@@ -553,6 +585,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   object-fit: contain;
   background: #000;
 }
+
 /* -------------------------------- */
 /* --- [CANVIAT] NOU DISSENY DEL GRID OVERLAY --- */
 
@@ -560,9 +593,11 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: 1.8fr 1fr; /* 2 columnes: càmera + stats dreta */
-  grid-template-rows: 2fr 1fr; /* 2 files: contingut superior + barra inferior */
- grid-template-areas:
+  grid-template-columns: 1.8fr 1fr;
+  /* 2 columnes: càmera + stats dreta */
+  grid-template-rows: 2fr 1fr;
+  /* 2 files: contingut superior + barra inferior */
+  grid-template-areas:
     "middle right"
     "bottom bottom";
   color: white;
@@ -573,6 +608,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   height: 100%;
   box-sizing: border-box;
 }
+
 /* -------------------------------- */
 
 .grid-item {
@@ -598,13 +634,13 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   position: relative;
   background: #000;
   padding: 0;
-  border: 2px solid red;
+  /* Eliminado el borde de depuración, si lo quieres lo puedes añadir: border: 2px solid red; */
   overflow: hidden;
 }
 
 .rect-right {
   grid-area: right;
-  border: 1px dashed #00aaff;
+  /* Eliminado el borde de depuración */
   overflow: hidden;
   /* [CANVI] Afegit per permetre l'scroll intern si la llista és llarga */
   display: flex;
@@ -613,10 +649,11 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 
 .box-bottom {
   grid-area: bottom;
-  border: 1px dashed #ffaa00;
+  /* Eliminado el borde de depuración */
   display: flex;
   align-items: center;
-  justify-content: center; /* Centrat per defecte, el v-if ho canvia */
+  justify-content: center;
+  /* Centrat per defecte, el v-if ho canvia */
   gap: 3rem;
   padding: 4px 16px;
 }
@@ -638,6 +675,12 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
   font-size: 3rem;
   font-weight: bold;
   line-height: 1.1;
+  text-align: center;
+  /* FIX: Alinea el texto al centro */
+  width: 100%;
+  /* FIX: Asegura que tenga espacio para centrarse */
+  display: block;
+  /* FIX: Asegura comportamiento de bloque */
 }
 
 .overlay-label {
@@ -655,6 +698,7 @@ const toggleVideoFullScreen = () => isVideoFullScreen.value = !isVideoFullScreen
 .box-bottom .overlay-label {
   font-size: 1.1rem;
 }
+
 /* -------------------------------- */
 
 .box-bottom .v-btn {

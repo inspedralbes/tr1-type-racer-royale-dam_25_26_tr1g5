@@ -221,12 +221,6 @@ watch(selectedId, id => { if (id && sourceMode.value === 'camera') startCamera(i
       <canvas ref="canvasRef" class="overlay"></canvas>
       
       </div>
-
-    <div class="camera-select">
-      <select v-model="selectedId">
-        <option v-for="d in devices" :key="d.deviceId" :value="d.deviceId">{{ d.label }}</option>
-      </select>
-    </div>
   </div>
 </template>
 
@@ -259,20 +253,4 @@ watch(selectedId, id => { if (id && sourceMode.value === 'camera') startCamera(i
   inset: 0;
   pointer-events: none;
 }
-
-/* 6. S'eliminen els estils del panell del comptador */
-/*
-.counter-panel {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #00ff88;
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  text-align: left;
-  font-family: monospace;
-  font-size: 1.2rem;
-}
-*/
 </style>
