@@ -101,16 +101,12 @@ docker compose up -d
 ---
 
 ## 🌐 **URL de producció**
-[https://fitcam.dam.inspedralbes.cat](https://fitcam.dam.inspedralbes.cat)
+[https://fitcam.dam.inspedralbes.cat](https://fitcam5.dam.inspedralbes.cat)
 
 ---
 
 ## 🚀 **Estat actual del projecte**
-🟡 *En desenvolupament*:  
-- Disseny i creació de la **base de dades (BBDD)**  
-- **Diagrama de pantalles** i flux de navegació  
-- **Implementació de les primeres vistes** amb Vue  
-- Connexió amb el backend en procés
+🟢 *Acabat*  
 
 ---
 
