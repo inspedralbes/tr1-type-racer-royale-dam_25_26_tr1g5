@@ -1,127 +1,95 @@
-# 🧠 **FitCam**
-<img width="420" height="420" alt="FitCam logo" src="https://github.com/user-attachments/assets/c202c189-35e1-415a-ae4e-ff883b16dbd9" />
+# FitCam - Type Racer Royale
 
----
+FitCam és una aplicació web interactiva que utilitza visió per computador per gamificar l'exercici físic. Els usuaris poden competir en temps real realitzant exercicis que són detectats i validats a través de la càmera del seu dispositiu.
 
-## 👥 **Membres de l’equip**
-- **Eduard Vilaseca**  
-- **Aymar Ramos**  
-- **Biel Calvet**  
-- **Fabrizzio Rodríguez**
+## 🏗️ Arquitectura del Sistema
 
----
+El projecte segueix una arquitectura de microserveis contenidoritzada, separant clarament el frontend, el backend i la base de dades.
 
-## 💡 **Descripció del projecte**
-**FitCam** és una aplicació web interactiva que combina **intel·ligència artificial** i **visió per computador** per millorar els entrenaments físics de manera dinàmica i entretinguda.  
+- **Frontend**: Desenvolupat amb **Vue 3** i **Vite**, utilitzant **Vuetify** per a la interfície d'usuari. S'encarrega de la interacció amb l'usuari i el processament de vídeo en el client (Edge AI) per a la detecció de postures.
+- **Backend**: Construït amb **Node.js** i **Express**. Gestiona l'autenticació (JWT), la lògica de negoci i la comunicació en temps real mitjançant **Socket.io**.
+- **Base de Dades**: **MySQL** per a la persistència de dades (usuaris, exercicis, resultats).
+- **Infraestructura**: Orquestrat amb **Docker Compose**, incloent un proxy invers **Nginx** per gestionar el trànsit.
 
-L’usuari pot:
-- **Crear una sala** o **unir-se a una sala existent**.  
-- Escollir els **exercicis** que vol realitzar.  
-- Seguir un **vídeo explicatiu** mentre la seva **webcam analitza els moviments** per valorar la precisió i la tècnica.  
+## 🧩 Diagrama de Components (Frontend)
 
-En finalitzar la sessió, FitCam mostra:
-- Una **puntuació final** basada en la qualitat dels moviments.  
-- Un **rànquing amb el Top 3** participants de la sala.  
+A continuació es mostra l'estructura principal de components i pàgines de l'aplicació Vue:
 
-🎯 L’objectiu és oferir una experiència d’entrenament **gamificada, social i personalitzada**, accessible directament des del navegador.
+```mermaid
+graph TD
+    App[App.vue] --> Layout
+    Layout --> NavBar[NavBar.vue]
+    Layout --> RouterView[Router View]
+    Layout --> Footer[AppFooter.vue]
 
----
+    subgraph Pages [Pàgines Principals]
+        RouterView --> Home[index.vue]
+        RouterView --> Auth[Login/Register]
+        RouterView --> Search[BuscadorExercici.vue]
+        RouterView --> Lobby[SessioLobby.vue]
+        RouterView --> Waiting[SalaEspera.vue]
+        RouterView --> Exercise[Exercici.vue]
+        RouterView --> Results[ResultatsExercici.vue]
+    end
 
-## 🧩 **Tecnologies principals**
+    subgraph Components [Components Reutilitzables]
+        Exercise --> VideoProc[VideoProcessor.vue]
+        Exercise --> PoseDet[PoseSquad.vue]
+    end
 
-| Àmbit | Eines i tecnologies |
-|-------|----------------------|
-| **Frontend** | Vue 3 + Vite |
-| **Backend** | Node.js + Express |
-| **Base de dades** | MySQL + Sequelize |
-| **IA / Visió per computador** | TensorFlow.js + MediaPipe (detecció de postura) |
-| **Autenticació i API** | JWT + REST API |
-| **Deploy** | Docker + servidor de l’Institut Pedralbes |
-
----
-
-## 🗂️ **Estructura mínima del projecte**
-<img width="401" height="609" alt="Project structure" src="https://github.com/user-attachments/assets/e73eed05-c6c3-4109-a051-7cb24ca680ab" />
-
-### ⚙️ **Configuració i execució del projecte**
-
-```bash
-# Clonar el repositori
-
-git clone https://github.com//inspedralbes/tr1-type-racer-royale-dam_25_26_tr1g5
-
------------------------------------------------------------
-
-# 1. Frontend
-# Instal·lació de dependències si no estan instal·lades
-
-npm install
-
-# Iniciar l'entorn de desenvolupament
-
-npm run dev
-
-#El frontend s’executarà habitualment a:
-#http://localhost:3000
-
------------------------------------------------------------
-
-# 2. Backend
-
-# Instal·lació de dependències
-npm install
-
-# Executar servidor
-
-node server.js
-
-#El servidor del backend s’executarà habitualment a:
-#http://localhost:3001
-
------------------------------------------------------------
-
-# 3. Docker
-
-# Si vols aixecar tot el projecte amb Docker Compose, pots fer-ho directament des de l’arrel del repositori:
-
-docker compose up -d
-
-# Això crearà i aixecarà automàticament els contenidors de frontend, backend i base de dades, permetent executar tot l’entorn de desenvolupament amb una sola comanda.
+    Auth --> Login[login.vue]
+    Auth --> Register[register.vue]
 ```
----
 
-## 📋 **Gestió del projecte**
-**Eina utilitzada:** [Taiga](https://tree.taiga.io/project/a24biecalcol-dam2_proj1/timeline)
+## 🐳 Diagrama d'Infraestructura Docker
 
----
+El sistema es desplega mitjançant 5 contenidors interconnectats:
 
-## 🎨 **Prototip gràfic**
-**Penpot:** [👉 Obrir el disseny](https://design.penpot.app/#/view?file-id=5b786374-066f-8104-8007-048a32a15967&page-id=5b786374-066f-8104-8007-048a32a18227&section=interactions&index=0&share-id=5b786374-066f-8104-8007-049649ccb737)
+```mermaid
+graph LR
+    Client((Client Web)) -- Port 80/443 --> Proxy[Nginx Proxy]
+    
+    subgraph Docker Network
+        Proxy -- / --> Frontend[Frontend Container]
+        Proxy -- /api, /socket.io --> Backend[Backend Container]
+        
+        Backend -- Port 3306 --> DB[(MySQL Database)]
+        PMA[phpMyAdmin] -- Port 3306 --> DB
+    end
 
----
+    Dev((Desenvolupador)) -- Port 8081 --> PMA
+```
 
-## 🌐 **URL de producció**
-[https://fitcam.dam.inspedralbes.cat](https://fitcam.dam.inspedralbes.cat)
+## 🚀 Guia de Desplegament
 
----
+### Prerequisits
+- [Docker](https://www.docker.com/get-started) instal·lat i en execució.
+- [Git](https://git-scm.com/) per clonar el repositori.
 
-## 🚀 **Estat actual del projecte**
-🟡 *En desenvolupament*:  
-- Disseny i creació de la **base de dades (BBDD)**  
-- **Diagrama de pantalles** i flux de navegació  
-- **Implementació de les primeres vistes** amb Vue  
-- Connexió amb el backend en procés
+### Passos per Desplegar
 
----
+1. **Clonar el repositori**:
+   ```bash
+   git clone <url-del-repositori>
+   cd tr1-type-racer-royale-dam_25_26_tr1g5-1
+   ```
 
-## 🔮 **Properes fites**
-- Integració del reconeixement de moviments amb **TensorFlow.js**  
-- Sistema de **login i registre d’usuaris**  
-- Creació de la **pantalla de resultats** i rànquing en temps real  
-- Desplegament complet amb **Docker**
+2. **Configurar variables d'entorn**:
+   Assegura't de tenir l'arxiu `.env` a l'arrel (o utilitza els valors per defecte configurats a `docker-compose.yml`).
 
----
+3. **Construir i aixecar els contenidors**:
+   ```bash
+   docker compose up --build
+   ```
+   Aquesta comanda descarregarà les imatges necessàries, construirà el frontend i el backend, i iniciarà tots els serveis.
 
-## 🧾 **Llicència**
-Projecte acadèmic desenvolupat dins del mòdul de **Projectes Transversals - 2n DAM (Institut Pedralbes)**.  
-No destinat a ús comercial.
+4. **Accedir a l'aplicació**:
+   - **Web App**: Obre el teu navegador a `http://localhost`
+   - **phpMyAdmin**: Per gestionar la BD, accedeix a `http://localhost:8081`
+
+### Comandes Útils
+
+- **Aturar els serveis**:
+  ```bash
+  docker compose down -v
+  ```
