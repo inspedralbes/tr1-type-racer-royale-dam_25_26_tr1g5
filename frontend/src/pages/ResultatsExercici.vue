@@ -263,7 +263,7 @@ const tornarCercador = () => router.push({ name: 'BuscadorExercici' })
                     <tr v-if="classificacio.length === 0">
                       <td colspan="4">
                         <v-progress-circular indeterminate color="#FF6600" class="my-4"></v-progress-circular>
-                        <p>Carregant resultats del grup...</p>
+                        <p>Carregant resultats del grup.</p>
                       </td>
                     </tr>
                     <tr v-for="(row, index) in classificacio" :key="index"
